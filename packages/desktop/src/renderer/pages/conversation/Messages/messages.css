@@ -10,6 +10,39 @@
   max-width: 100%;
 }
 
+.message-process-summary {
+  width: 100%;
+}
+
+.message-process-summary__toggle.arco-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  color: var(--aou-6);
+  font-size: 13px;
+}
+
+.message-process-summary__toggle.arco-btn:hover {
+  color: var(--aou-7);
+  background: transparent;
+}
+
+.message-process-summary__toggle svg:last-child {
+  transition: transform 0.2s ease;
+}
+
+.message-process-summary__arrow--open {
+  transform: rotate(90deg);
+}
+
+.message-process-summary__body {
+  margin-top: 6px;
+  margin-inline-start: 6px;
+  padding-inline-start: 14px;
+  border-inline-start: 1px solid var(--color-border-2);
+}
+
 @container (min-width: 720px) {
   .chat-surface-fluid {
     width: calc(100% - clamp(80px, 10cqw, 240px));

@@ -570,6 +570,7 @@
     "preset_registered": "Agenten-Voreinstellung erfolgreich registriert!"
   },
   "thinking": {
+    "process": "Denkprozess",
     "complete": "Denken abgeschlossen",
     "label": "Wird gedacht..."
   },
@@ -633,6 +634,7 @@
   "notFound": "Unterhaltung nicht gefunden oder wurde gelöscht",
   "explorer": {
     "addFolder": "Add folder to project",
+    "uploadFiles": "Upload local files",
     "refreshFiles": "Dateien aktualisieren",
     "refreshChanges": "Änderungen aktualisieren",
     "collapseAll": "Alle einklappen",

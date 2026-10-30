@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Assistant, AssistantAgent } from '@/common/types/agent/assistantTypes';
 import { resolveCronAgentConfig } from '@/renderer/pages/cron/ScheduledTasksPage/resolveCronAgentConfig';
+import { AION_CLI_DISPLAY_NAME } from '@/common/config/branding';
 
 describe('resolveCronAgentConfig', () => {
   it('stores provider id for preset aionrs assistants instead of literal aionrs backend', () => {
@@ -45,6 +46,50 @@ describe('resolveCronAgentConfig', () => {
         workspace: '/tmp/project',
       },
     });
+  });
+
+  it('preserves a generated assistant task name when editing', () => {
+    const result = resolveCronAgentConfig({
+      agentValue: 'bare-aionrs',
+      presetAssistants: [
+        assistant({
+          id: 'bare-aionrs',
+          source: 'generated',
+          name: 'Aion CLI',
+          agent_id: 'agent-aionrs',
+          agent: agent('agent-aionrs', 'aionrs'),
+        }),
+      ],
+      preservedAssistantName: '星地网络Agent',
+      selectedAionrsProvider: { id: 'provider-1' },
+      model_id: 'model-1',
+      getMode: () => 'yolo',
+      aionrsModelRequiredMessage: 'provider required',
+    });
+
+    expect(result.agent_config?.name).toBe('星地网络Agent');
+  });
+
+  it('replaces an old Aion CLI task name when editing', () => {
+    const result = resolveCronAgentConfig({
+      agentValue: 'bare-aionrs',
+      presetAssistants: [
+        assistant({
+          id: 'bare-aionrs',
+          source: 'generated',
+          name: 'Aion CLI',
+          agent_id: 'agent-aionrs',
+          agent: agent('agent-aionrs', 'aionrs'),
+        }),
+      ],
+      preservedAssistantName: 'Aion CLI',
+      selectedAionrsProvider: { id: 'provider-1' },
+      model_id: 'model-1',
+      getMode: () => 'yolo',
+      aionrsModelRequiredMessage: 'provider required',
+    });
+
+    expect(result.agent_config?.name).toBe(AION_CLI_DISPLAY_NAME);
   });
 
   it('keeps preset acp assistants on their backend slug', () => {

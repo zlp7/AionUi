@@ -66,6 +66,12 @@ describe('managedAgentSearchText', () => {
 
     expect(haystack).toBe('glm agent');
   });
+
+  it('matches the renamed built-in Agent', () => {
+    const haystack = managedAgentSearchText(managedAgent({ name: 'Aion CLI', agent_type: 'aionrs' }), 'zh-CN');
+
+    expect(haystack).toContain('星地网络agent');
+  });
 });
 
 describe('formatManagedAgentDiagnosticMessage', () => {

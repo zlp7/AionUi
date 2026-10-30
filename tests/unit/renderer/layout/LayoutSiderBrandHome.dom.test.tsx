@@ -71,6 +71,7 @@ vi.mock('@renderer/pages/conversation/Preview/context/PreviewContext', () => ({
 }));
 
 import Layout from '@renderer/components/layout/Layout';
+import { APP_BRAND_NAME } from '@/common/config/branding';
 
 const renderLayout = () => render(<Layout sider={<div>sider</div>} />);
 
@@ -159,7 +160,7 @@ describe('Layout sider brand Home button', () => {
 
     // No actionable role/label in chat routes.
     expect(screen.queryByLabelText(BACK_KEY)).toBeNull();
-    const wordmark = screen.getByText('AionUi');
+    const wordmark = screen.getByText(APP_BRAND_NAME);
     fireEvent.click(wordmark);
     expect(navigate).not.toHaveBeenCalled();
   });
@@ -168,7 +169,7 @@ describe('Layout sider brand Home button', () => {
     currentPathname = '/conversation/xyz';
     renderLayout();
 
-    fireEvent.click(screen.getByText('AionUi'));
+    fireEvent.click(screen.getByText(APP_BRAND_NAME));
     expect(navigate).not.toHaveBeenCalled();
   });
 
@@ -201,8 +202,8 @@ describe('Layout sider brand Home button', () => {
     sessionStorage.setItem('aion:last-non-settings-path', '/conversation/abc');
     const { container } = renderLayout();
 
-    // The icon is the SVG-wrapping div (bg-black), separate from the wordmark.
-    const icon = container.querySelector('.bg-black') as HTMLElement;
+    // The icon is the logo-wrapping div, separate from the wordmark.
+    const icon = container.querySelector('.layout-sider-brand') as HTMLElement;
     expect(icon).toBeTruthy();
     for (let i = 0; i < 4; i++) fireEvent.click(icon);
     expect(openDevTools).toHaveBeenCalled();

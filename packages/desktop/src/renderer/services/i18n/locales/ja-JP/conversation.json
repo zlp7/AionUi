@@ -569,6 +569,7 @@
     "preset_registered": "Agent preset registered successfully!"
   },
   "thinking": {
+    "process": "思考プロセス",
     "complete": "思考完了",
     "label": "思考中..."
   },
@@ -632,6 +633,7 @@
   "notFound": "会話が存在しないか、削除されました",
   "explorer": {
     "addFolder": "Add folder to project",
+    "uploadFiles": "Upload local files",
     "refreshFiles": "ファイルを更新",
     "refreshChanges": "変更を更新",
     "collapseAll": "すべて折りたたむ",

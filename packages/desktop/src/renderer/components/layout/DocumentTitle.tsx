@@ -7,6 +7,7 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { APP_BRAND_NAME } from '@/common/config/branding';
 
 /**
  * Single owner of `document.title`.
@@ -17,8 +18,8 @@ import { useTranslation } from 'react-i18next';
  * it here from the route and the app language keeps it correct across both
  * navigation and language switches.
  */
-export function titleForPath(pathname: string, t: (key: string) => string): string {
-  return pathname.startsWith('/login') ? t('login.pageTitle') : 'AionUi';
+export function titleForPath(pathname: string, t: (key: string, options?: Record<string, unknown>) => string): string {
+  return pathname.startsWith('/login') ? t('login.pageTitle', { brand: APP_BRAND_NAME }) : APP_BRAND_NAME;
 }
 
 const DocumentTitle: React.FC = () => {

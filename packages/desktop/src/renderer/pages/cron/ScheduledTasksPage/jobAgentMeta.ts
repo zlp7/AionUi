@@ -8,7 +8,9 @@ import type { ICronJob } from '@/common/adapter/ipcBridge';
 import type { AgentLogoMap } from '@renderer/utils/model/agentLogo';
 import { resolveAgentLogo } from '@renderer/utils/model/agentLogo';
 import { resolveAssistantAvatar } from '@renderer/utils/model/assistantAvatar';
+import { resolveAssistantTaskName } from '@renderer/utils/model/assistantDisplay';
 import type { Assistant } from '@/common/types/agent/assistantTypes';
+import { resolveAgentDisplayName } from '@/common/config/branding';
 
 function normalizeAgentBackend(agent: string | undefined): string | undefined {
   if (!agent) return undefined;
@@ -19,11 +21,20 @@ function resolveCronAssistantId(config: ICronJob['metadata']['agent_config']): s
   return config?.assistant_id;
 }
 
+function resolveLegacyAgentName(rawType: string | undefined, savedName?: string): string | undefined {
+  const name = savedName?.trim();
+  if (rawType === 'aionrs' && (!name || name === 'Aion CLI')) {
+    return resolveAgentDisplayName(rawType, name || rawType);
+  }
+  return name || rawType;
+}
+
 /**
  * Resolve the display name and logo for a cron job's agent.
  *
- * Assistant-backed jobs display from the assistant catalog. Non-assistant
- * legacy jobs fall back to the derived runtime type.
+ * Assistant-backed jobs display from the assistant catalog. A generated CLI
+ * assistant may have a task-specific name saved in the cron configuration.
+ * Non-assistant legacy jobs fall back to the derived runtime type.
  */
 export function getJobAgentMeta(
   job: ICronJob,
@@ -35,11 +46,13 @@ export function getJobAgentMeta(
   if (assistantId) {
     const assistant = presetAssistants.find((item) => item.id === assistantId);
     if (!assistant) {
-      return { name: config?.name || normalizeAgentBackend(job.metadata.agent_type), assistantFallback: true };
+      return {
+        name: resolveLegacyAgentName(normalizeAgentBackend(job.metadata.agent_type), config?.name),
+        assistantFallback: true,
+      };
     }
 
-    const rawType = normalizeAgentBackend(job.metadata.agent_type);
-    const displayName = assistant.name || rawType;
+    const displayName = resolveAssistantTaskName(assistant, 'en-US', config?.name);
     const avatar = resolveAssistantAvatar(assistant.avatar);
     if (avatar.kind === 'image') {
       return { name: displayName, logo: avatar.value };
@@ -57,13 +70,13 @@ export function getJobAgentMeta(
 
   if (rawType === 'acp') {
     return {
-      name: config?.name || rawType,
+      name: resolveLegacyAgentName(rawType, config?.name),
       logo: resolveAgentLogo(logos, { backend: logoBackend }),
     };
   }
 
   return {
-    name: config?.name || rawType,
+    name: resolveLegacyAgentName(rawType, config?.name),
     logo: resolveAgentLogo(logos, { backend: logoBackend }),
   };
 }

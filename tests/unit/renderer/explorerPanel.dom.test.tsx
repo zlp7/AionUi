@@ -58,6 +58,24 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('ExplorerPanel arco expand roundtrip', () => {
+  it('shows download for a file in the WebUI menu and passes its project path', async () => {
+    configureExplorerStore(makePort({ [peKey('pe1', '')]: [file('report.md')] }));
+    const onDownloadFile = vi.fn();
+    render(
+      <ExplorerPanel
+        projectId='p1'
+        roots={[{ pe_id: 'pe1', title: 'app', role: 'workspace' }]}
+        onDownloadFile={onDownloadFile}
+      />
+    );
+    const fileNode = (await screen.findByText('report.md')).closest('.arco-tree-node');
+    const moreButton = fileNode?.querySelector('button[aria-label="common.more"]');
+    expect(moreButton).toBeTruthy();
+    fireEvent.click(moreButton!);
+    fireEvent.click(await screen.findByText('conversation.workspace.contextMenu.download'));
+    expect(onDownloadFile).toHaveBeenCalledWith('pe1', 'report.md', 'report.md');
+  });
+
   it('renders a directory as a non-leaf expandable node (loadMore regression) and expands it via the controlled expandedKeys roundtrip', async () => {
     // NOTE: arco's internal switcher-click wiring is not reproducible under jsdom
     // (fireEvent does not reach it); that click→onExpand path is verified live via
@@ -347,5 +365,26 @@ describe('ExplorerPanel OS-external import (source A / Finder drag)', () => {
     fireDrag(screen.getByText('sub'), 'drop', { dataTransfer: dt });
 
     expect(onImportFiles).not.toHaveBeenCalled();
+  });
+});
+
+describe('ExplorerPanel browser file drops', () => {
+  it('passes browser files to the directory under the cursor', async () => {
+    configureExplorerStore(makePort({ [peKey('pe1', '')]: [dir('sub')], [peKey('pe1', 'sub')]: [] }));
+    const onUploadFiles = vi.fn();
+    render(
+      <ExplorerPanel
+        projectId='p1'
+        roots={[{ pe_id: 'pe1', title: 'app', role: 'workspace' }]}
+        workspacePeId='pe1'
+        onUploadFiles={onUploadFiles}
+      />
+    );
+    await screen.findByText('sub');
+    const file = new File(['hello'], 'note.txt', { type: 'text/plain' });
+    const dt = makeDataTransfer();
+    dt.files = [file] as unknown as FileList;
+    fireDrag(screen.getByText('sub'), 'drop', { dataTransfer: dt });
+    expect(onUploadFiles).toHaveBeenCalledWith('pe1', 'sub', [file]);
   });
 });

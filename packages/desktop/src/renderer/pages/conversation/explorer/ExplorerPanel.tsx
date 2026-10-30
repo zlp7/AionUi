@@ -50,6 +50,8 @@ export type ExplorerPanelProps = {
   onRemoveRoot?: (peId: string) => void;
   /** Open a file (leaf) in the preview panel. Called when a file node is selected. */
   onOpenFile?: (peId: string, relativePath: string) => void;
+  /** Save a file leaf to the browser or desktop downloads. */
+  onDownloadFile?: (peId: string, relativePath: string, name: string) => void;
   /** File operations (A): rename + delete on an entry, create-file / create-dir
    * inside a directory. Omit to hide the corresponding context-menu item. */
   onRename?: (peId: string, relativePath: string, name: string) => void;
@@ -78,9 +80,10 @@ export type ExplorerPanelProps = {
   onCopyAbsolutePath?: (peId: string, relativePath: string) => void;
   /** Import OS files (A-paste) dropped onto a node into that node's directory
    * (a file node routes to its parent dir). `filePaths` are absolute OS paths
-   * (Electron only — empty in the browser, where the drop is ignored). Omit to
-   * disable drop import. */
+   * available on Electron; browser File objects use `onUploadFiles`. */
   onImportFiles?: (targetPeId: string, targetRelativePath: string, filePaths: string[]) => void;
+  /** Upload browser File objects into the dropped directory (WebUI). */
+  onUploadFiles?: (targetPeId: string, targetRelativePath: string, files: File[]) => void;
   /** Copy/move a tree node (source B/C) dropped onto a directory node. `source`
    * is the dragged node's identity; the drop lands in `targetRelativePath` under
    * `targetPeId` (a file target routes to its parent dir). `op` is resolved from
@@ -94,6 +97,7 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
   workspacePeId,
   onRemoveRoot,
   onOpenFile,
+  onDownloadFile,
   onRename,
   onDelete,
   onNewFile,
@@ -103,6 +107,7 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
   onCopyRelativePath,
   onCopyAbsolutePath,
   onImportFiles,
+  onUploadFiles,
   onTransfer,
 }) => {
   const view = useExplorerView();
@@ -239,7 +244,7 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
       // copy/move by same-pe + modifier and is guarded (no drop into self/own
       // subtree, no move into own parent); otherwise fall back to OS-file import.
       // The highlight tracks the hovered node only while the drop is legal.
-      const acceptsDrop = Boolean(onImportFiles || onTransfer);
+      const acceptsDrop = Boolean(onImportFiles || onUploadFiles || onTransfer);
       const dropProps = acceptsDrop
         ? {
             onDragOver: (e: React.DragEvent) => {
@@ -252,7 +257,7 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
                 const allowed = isTransferAllowed(src, target, op);
                 e.dataTransfer.dropEffect = allowed ? op : 'none';
                 setDragOverKey(allowed ? key : null);
-              } else if (onImportFiles) {
+              } else if (onImportFiles || onUploadFiles) {
                 e.dataTransfer.dropEffect = 'copy';
                 if (dragOverKey !== key) setDragOverKey(key);
               }
@@ -275,6 +280,9 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
                   .map((f) => f.path)
                   .filter(Boolean);
                 if (paths.length) onImportFiles(peId, dropTargetRel, paths);
+              }
+              if (!isElectronDesktop() && onUploadFiles && e.dataTransfer.files.length) {
+                onUploadFiles(peId, dropTargetRel, Array.from(e.dataTransfer.files));
               }
             },
           }
@@ -319,6 +327,7 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
       const showWebActions = !isElectronDesktop();
       const menuCaps: ExplorerMenuCaps = {
         addToChat: Boolean(onAddToChat),
+        download: isFile && Boolean(onDownloadFile),
         revealInFolder: canReveal,
         copyRelativePath: Boolean(onCopyRelativePath),
         copyAbsolutePath: canCopyAbsolutePath,
@@ -345,6 +354,7 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
       const onClickMenuItem = (menuKey: string, event: { stopPropagation?: () => void }) => {
         event?.stopPropagation?.();
         if (menuKey === 'addToChat') onAddToChat?.(peId, rel, name, isFile);
+        else if (menuKey === 'download') onDownloadFile?.(peId, rel, name);
         else if (menuKey === 'newFile') onNewFile?.(peId, rel);
         else if (menuKey === 'newDir') onNewDir?.(peId, rel);
         else if (menuKey === 'rename') onRename?.(peId, rel, name);
@@ -359,6 +369,8 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
         switch (key) {
           case 'addToChat':
             return <Menu.Item key='addToChat'>{t('conversation.explorer.contextMenu.addToChat')}</Menu.Item>;
+          case 'download':
+            return <Menu.Item key='download'>{t('conversation.workspace.contextMenu.download')}</Menu.Item>;
           case 'revealInFolder':
             return <Menu.Item key='revealInFolder'>{t('conversation.workspace.contextMenu.openLocation')}</Menu.Item>;
           case 'copyRelativePath':
@@ -442,6 +454,7 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
       onNewDir,
       onAddToChat,
       onImportFiles,
+      onUploadFiles,
       onTransfer,
       dragOverKey,
       workspacePeId,
@@ -467,7 +480,7 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
   };
 
   const containerProps =
-    onImportFiles || onTransfer
+    onImportFiles || onUploadFiles || onTransfer
       ? {
           onDragOver: (e: React.DragEvent) => {
             e.preventDefault();
@@ -495,6 +508,9 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({
                 .map((f) => f.path)
                 .filter(Boolean)
             );
+            if (!isElectronDesktop() && onUploadFiles && workspacePeId && e.dataTransfer.files.length) {
+              onUploadFiles(workspacePeId, '', Array.from(e.dataTransfer.files));
+            }
           },
           onPaste: (e: React.ClipboardEvent) => {
             const files = e.clipboardData?.files;

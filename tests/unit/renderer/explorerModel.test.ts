@@ -642,6 +642,7 @@ describe('buildTransferRequest', () => {
 describe('explorerContextMenuSections — grouped, ordered, divider-ready sections', () => {
   const NONE: ExplorerMenuCaps = {
     addToChat: false,
+    download: false,
     revealInFolder: false,
     copyRelativePath: false,
     copyAbsolutePath: false,
@@ -679,6 +680,7 @@ describe('explorerContextMenuSections — grouped, ordered, divider-ready sectio
       explorerContextMenuSections(
         caps({
           addToChat: true,
+          download: true,
           revealInFolder: true,
           copyRelativePath: true,
           copyAbsolutePath: true,
@@ -686,7 +688,11 @@ describe('explorerContextMenuSections — grouped, ordered, divider-ready sectio
           delete: true,
         })
       )
-    ).toEqual([['addToChat'], ['revealInFolder', 'copyRelativePath', 'copyAbsolutePath'], ['rename', 'delete']]);
+    ).toEqual([
+      ['addToChat'],
+      ['download', 'revealInFolder', 'copyRelativePath', 'copyAbsolutePath'],
+      ['rename', 'delete'],
+    ]);
   });
 
   it('a pe root shows create + remove-from-project instead of rename / delete', () => {

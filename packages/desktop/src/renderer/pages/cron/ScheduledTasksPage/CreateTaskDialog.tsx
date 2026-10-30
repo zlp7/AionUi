@@ -25,7 +25,7 @@ import { WorkspaceFolderSelect } from '@renderer/components/workspace';
 import { createCronSchedule } from '@renderer/pages/cron/cronUtils';
 import { getConversationCreateErrorMessage } from '@renderer/pages/conversation/utils/conversationCreateError';
 import { resolveAssistantAvatar } from '@renderer/utils/model/assistantAvatar';
-import { resolveAssistantName } from '@renderer/utils/model/assistantDisplay';
+import { resolveAssistantName, resolveAssistantTaskName } from '@renderer/utils/model/assistantDisplay';
 import { resolveCronAgentConfig } from './resolveCronAgentConfig';
 import { assistantRuntimeKey, isAionrsAssistant } from '@/common/types/agent/assistantTypes';
 
@@ -541,6 +541,10 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
         agent_config = resolveCronAgentConfig({
           agentValue: assistantValue,
           presetAssistants,
+          preservedAssistantName:
+            isEditMode && editJob?.metadata.agent_config?.assistant_id === assistantValue
+              ? editJob?.metadata.agent_config?.name
+              : undefined,
           selectedAionrsProvider: geminiCurrentModel
             ? {
                 id: geminiCurrentModel.id as string | undefined,
@@ -648,7 +652,11 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                 if (!assistantId) return '';
 
                 const assistant = presetAssistants.find((item) => item.id === assistantId);
-                const name = resolveAssistantName(assistant, localeKey, assistantId);
+                const configuredName =
+                  editJob?.metadata.agent_config?.assistant_id === assistantId
+                    ? editJob?.metadata.agent_config?.name?.trim()
+                    : undefined;
+                const name = resolveAssistantTaskName(assistant, localeKey, configuredName);
                 const avatar = resolveAssistantAvatar(assistant?.avatar);
 
                 return (

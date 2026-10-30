@@ -571,6 +571,7 @@
     }
   },
   "thinking": {
+    "process": "Düşünme süreci",
     "complete": "Düşünme tamamlandı",
     "label": "Düşünüyor..."
   },
@@ -634,6 +635,7 @@
   "notFound": "Konuşma bulunamadı veya silinmiş",
   "explorer": {
     "addFolder": "Add folder to project",
+    "uploadFiles": "Upload local files",
     "refreshFiles": "Dosyaları yenile",
     "refreshChanges": "Değişiklikleri yenile",
     "collapseAll": "Tümünü daralt",

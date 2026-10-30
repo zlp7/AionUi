@@ -241,6 +241,22 @@ describe('CreateTaskDialog', () => {
     expect(await screen.findByText('问好助手')).toBeInTheDocument();
   });
 
+  it('shows and preserves a generated assistant task name in edit mode', async () => {
+    currentAssistants = [bareAssistant()];
+    const editJob = job();
+    editJob.metadata.agent_config = { assistant_id: 'bare-codex', name: '星地网络Agent' };
+
+    render(<CreateTaskDialog visible onClose={() => {}} editJob={editJob} />);
+
+    expect(await screen.findByText('星地网络Agent')).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByTestId('modal-ok'));
+    await waitFor(() => expect(resolveCronAgentConfig).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(resolveCronAgentConfig).mock.calls[0][0]).toMatchObject({
+      agentValue: 'bare-codex',
+      preservedAssistantName: '星地网络Agent',
+    });
+  });
+
   it('does not infer assistant identity from legacy backend fields after migration ownership moved server-side', async () => {
     currentAssistants = [bareAssistant(), ...assistants()];
 

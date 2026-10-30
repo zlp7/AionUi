@@ -5,6 +5,7 @@
  */
 
 import type { AssistantListItem } from '../types';
+import { resolveAssistantName } from '@/renderer/utils/model/assistantDisplay';
 import EnabledAssistantsList from './EnabledAssistantsList';
 import MyAssistantsList from './MyAssistantsList';
 import OfficialAssistantsGrid from './OfficialAssistantsGrid';
@@ -79,6 +80,7 @@ const AssistantHomeTabs: React.FC<AssistantHomeTabsProps> = ({
     return assistants.filter((assistant) => {
       const searchableText = [
         assistant.name,
+        resolveAssistantName(assistant, i18n.language, assistant.name),
         assistant.name_i18n?.[i18n.language],
         assistant.description,
         assistant.description_i18n?.[i18n.language],

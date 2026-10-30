@@ -12,6 +12,7 @@ import { AionSearchInput } from '@/renderer/components/base';
 import { useAssistantOrder } from '@/renderer/hooks/assistant/useAssistantOrder';
 import { useManagedAgentRuntimeCatalog } from '@/renderer/hooks/agent/useManagedAgents';
 import { managedAgentSearchText } from '@/renderer/utils/model/agentTypes';
+import { resolveAssistantName } from '@/renderer/utils/model/assistantDisplay';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { resolveAssistantAvatar } from '@/renderer/utils/model/assistantAvatar';
 import ThemedLogo from '@/renderer/components/agent/ThemedLogo';
@@ -31,6 +32,7 @@ export function assistantMatchesSearch(
 ): boolean {
   const searchableText = [
     assistant.name,
+    resolveAssistantName(assistant, localeKey, assistant.name),
     assistant.name_i18n?.[localeKey],
     assistant.description,
     assistant.description_i18n?.[localeKey],
@@ -224,7 +226,7 @@ const AssistantSelectionArea: React.FC<AssistantSelectionAreaProps> = ({
   const renderAssistantPill = (assistant: Assistant, testId: string, fullWidth = false) => {
     const avatar = resolveAssistantAvatar(assistant.avatar);
     const isSelected = selectedId === assistant.id;
-    const label = assistant.name_i18n?.[localeKey] || assistant.name;
+    const label = resolveAssistantName(assistant, localeKey, assistant.name);
 
     return (
       <Button

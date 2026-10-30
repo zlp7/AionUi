@@ -1,4 +1,5 @@
 import { resolveExtensionAssetUrl } from '@/renderer/utils/platform';
+import { AION_CLI_DISPLAY_NAME, resolveAgentDisplayName } from '@/common/config/branding';
 import { isBackendRelativeAssetPath, isLikelyLocalFilePath } from '@/renderer/utils/model/assistantAvatar';
 import type { AssistantListItem, AvailableBackend } from './types';
 import type { ManagedAgent } from '@/renderer/utils/model/agentTypes';
@@ -86,6 +87,7 @@ export const filterAssistants = (
     if (normalizedQuery) {
       const searchableText = [
         assistant.name_i18n?.[localeKey] || assistant.name,
+        assistant.source === 'generated' && assistant.agent?.type === 'aionrs' ? AION_CLI_DISPLAY_NAME : '',
         assistant.description_i18n?.[localeKey] || assistant.description || '',
       ]
         .join(' ')
@@ -159,14 +161,15 @@ const isAssistantEditorAgent = (agent: ManagedAgent): boolean => ASSISTANT_EDITO
 
 /**
  * Split the user's own assistants into the two "My Assistants" groups, each
- * sorted by sort_order. Bare CLI assistants come first (fixed), then
- * user-created. Official (builtin) assistants live in the other tab and are
- * excluded here.
+ * sorted by sort_order. Only Aion CLI appears in the generated CLI group;
+ * other generated catalog entries remain hidden. Official (builtin)
+ * assistants live in the other tab and are excluded here.
  */
 export const groupMyAssistants = (assistants: AssistantListItem[]) => {
   return {
-    // 'generated' == a bare CLI assistant auto-created from a local CLI tool.
-    cliAssistants: assistants.filter((a) => a.source === 'generated').toSorted(byAssistantSortOrder),
+    cliAssistants: assistants
+      .filter((a) => a.source === 'generated' && a.agent?.type === 'aionrs')
+      .toSorted(byAssistantSortOrder),
     createdAssistants: assistants.filter((a) => a.source === 'user').toSorted(byAssistantSortOrder),
   };
 };
@@ -217,7 +220,7 @@ export const buildAssistantEditorBackends = (
 
     backendMap.set(agentId, {
       id: agentId,
-      name: agent.name_i18n?.[localeKey] || agent.name,
+      name: resolveAgentDisplayName(agent.agent_type, agent.name_i18n?.[localeKey] || agent.name),
       runtimeKey,
       isExtension: agent.isExtension,
       // Prefer the agent's own avatar/icon; the dropdown falls back to the logo

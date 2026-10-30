@@ -556,6 +556,7 @@ export function buildTransferRequest(op: TransferOp, from: DirRef, toDir: DirRef
 /** A context-menu action key (stable; also the arco `Menu.Item` key). */
 export type ExplorerMenuItemKey =
   | 'addToChat'
+  | 'download'
   | 'revealInFolder'
   | 'copyRelativePath'
   | 'copyAbsolutePath'
@@ -571,7 +572,7 @@ export type ExplorerMenuCaps = Record<ExplorerMenuItemKey, boolean>;
 /**
  * The context menu grouped into ordered sections:
  *   1. add-to-chat
- *   2. read-only utilities (open location, copy relative, copy absolute)
+ *   2. read-only utilities (download, open location, copy relative, copy absolute)
  *   3. mutate (new file, new dir, rename, delete, remove-from-project)
  * Only enabled items appear, and only
  * non-empty sections are returned — so the caller draws a divider simply between
@@ -582,7 +583,7 @@ export type ExplorerMenuCaps = Record<ExplorerMenuItemKey, boolean>;
 export function explorerContextMenuSections(caps: ExplorerMenuCaps): ExplorerMenuItemKey[][] {
   const sections: ExplorerMenuItemKey[][] = [
     ['addToChat'],
-    ['revealInFolder', 'copyRelativePath', 'copyAbsolutePath'],
+    ['download', 'revealInFolder', 'copyRelativePath', 'copyAbsolutePath'],
     ['newFile', 'newDir', 'rename', 'delete', 'remove'],
   ];
   return sections.map((keys) => keys.filter((key) => caps[key])).filter((keys) => keys.length > 0);

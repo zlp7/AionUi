@@ -5,6 +5,7 @@
  */
 
 import { ipcBridge } from '@/common';
+import { AION_CLI_DISPLAY_NAME } from '@/common/config/branding';
 import type { TFunction } from 'i18next';
 
 /**
@@ -186,6 +187,7 @@ export async function fetchManagedAgents(): Promise<ManagedAgent[]> {
 export function managedAgentSearchText(agent: ManagedAgent, language: string): string {
   return [
     agent.name,
+    agent.agent_type === 'aionrs' ? AION_CLI_DISPLAY_NAME : undefined,
     agent.name_i18n?.[language],
     agent.description,
     agent.description_i18n?.[language],

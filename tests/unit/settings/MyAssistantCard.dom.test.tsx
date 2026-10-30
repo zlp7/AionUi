@@ -102,6 +102,20 @@ describe('MyAssistantCard', () => {
     expect(screen.queryByText('Fallback')).not.toBeInTheDocument();
   });
 
+  it('shows the configured name for the generated Aion CLI assistant', () => {
+    renderCard(
+      makeAssistant({
+        id: 'aion-cli',
+        source: 'generated',
+        name: 'Aion CLI',
+        agent: { type: 'aionrs', source: 'internal' },
+      })
+    );
+
+    expect(screen.getByText('星地网络Agent')).toBeInTheDocument();
+    expect(screen.queryByText('Aion CLI')).not.toBeInTheDocument();
+  });
+
   it('shows the unavailable warning only when the agent is not online', () => {
     renderCard(makeAssistant({ id: 'online' }));
     expect(screen.queryByTestId('assistant-agent-unavailable-online')).not.toBeInTheDocument();

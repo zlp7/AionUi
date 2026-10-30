@@ -211,6 +211,34 @@ describe('AssistantEditorSections', () => {
     ];
   });
 
+  it('shows the configured name in the locked Aion CLI identity and Agent selector', () => {
+    renderWithProviders(
+      <AssistantEditorSections
+        editor={createEditor({
+          isCreating: false,
+          profile: { ...createEditor().profile, name: 'Aion CLI' },
+          agent: {
+            value: 'aionrs-1',
+            setValue: vi.fn(),
+            availableBackends: [backendOption('aionrs-1', 'aionrs', '星地网络Agent')],
+          },
+        })}
+        activeAssistant={{
+          id: 'bare-aionrs',
+          name: 'Aion CLI',
+          sort_order: 1,
+          source: 'generated',
+          enabled: true,
+          agent_id: 'aionrs-1',
+          agent: { type: 'aionrs', source: 'internal' },
+        }}
+      />
+    );
+
+    expect(screen.getByTestId('input-assistant-name')).toHaveValue('星地网络Agent');
+    expect(screen.getByTestId('select-assistant-agent')).toHaveTextContent('星地网络Agent');
+  });
+
   it('renders all default configuration rows in a single card', () => {
     renderWithProviders(
       <AssistantEditorSections

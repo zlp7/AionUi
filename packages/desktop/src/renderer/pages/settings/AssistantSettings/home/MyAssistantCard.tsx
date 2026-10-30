@@ -7,6 +7,7 @@
 import type { AssistantListItem } from '../types';
 import AssistantAvatar from '../AssistantAvatar';
 import RuntimeBadge from './RuntimeBadge';
+import { resolveAssistantName } from '@/renderer/utils/model/assistantDisplay';
 import { Button, Dropdown, Menu, Switch, Tooltip } from '@arco-design/web-react';
 import { Attention, MoreOne } from '@icon-park/react';
 import React from 'react';
@@ -81,7 +82,7 @@ const MyAssistantCard: React.FC<MyAssistantCardProps> = ({
       </div>
       <div className={`mt-12px flex min-w-0 items-center gap-8px ${enabled ? '' : 'opacity-70'}`}>
         <span className='truncate text-14px font-600 text-t-primary'>
-          {assistant.name_i18n?.[localeKey] || assistant.name}
+          {resolveAssistantName(assistant, localeKey, assistant.name)}
         </span>
         {assistant.agent_status !== 'online' && (
           <Tooltip

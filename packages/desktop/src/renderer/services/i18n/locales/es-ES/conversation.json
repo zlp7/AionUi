@@ -570,6 +570,7 @@
     "preset_registered": "¡Preset del agente registrado correctamente!"
   },
   "thinking": {
+    "process": "Proceso de razonamiento",
     "complete": "Pensamiento completado",
     "label": "Pensando..."
   },
@@ -633,6 +634,7 @@
   "notFound": "Conversación no encontrada o ha sido eliminada",
   "explorer": {
     "addFolder": "Add folder to project",
+    "uploadFiles": "Upload local files",
     "refreshFiles": "Actualizar archivos",
     "refreshChanges": "Actualizar cambios",
     "collapseAll": "Contraer todo",

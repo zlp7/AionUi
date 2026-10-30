@@ -1415,5 +1415,115 @@
   "crossSessionMessageDesc": "允许 Agent 向你的其他会话发送消息。关闭后，输入框的 @@ 会话提及与投递能力同时停用。",
   "crossSessionMessageDisabledBanner": "跨会话消息已关闭，输入框的 @@ 会话提及不可用。",
   "crossSessionMessageResume": "重新开启",
-  "crossSessionMessageUpdateFailed": "跨会话消息设置更新失败"
+  "crossSessionMessageUpdateFailed": "跨会话消息设置更新失败",
+  "builtinSkillCatalog": {
+    "aionuiTroubleshooting": {
+      "name": "AionUi 故障排查",
+      "description": "诊断对话卡住、模型调用失败、定时任务、MCP 服务和后端日志等问题。"
+    },
+    "aionuiWebuiPublic": {
+      "name": "AionUi 公网访问",
+      "description": "通过 Cloudflare 临时隧道生成可从互联网访问的 WebUI 链接。"
+    },
+    "aionuiWebuiSetup": {
+      "name": "AionUi 远程访问设置",
+      "description": "配置局域网、Tailscale 或服务器上的 WebUI 远程访问。"
+    },
+    "aionuiConfig": {
+      "name": "AionUi 配置",
+      "description": "管理助手、技能、MCP 服务、模型、Agent 和定时任务。"
+    },
+    "conversationCreate": {
+      "name": "创建对话",
+      "description": "为用户新建一个对话。"
+    },
+    "cron": {
+      "name": "定时任务",
+      "description": "创建、查询和更新按计划执行的任务。"
+    },
+    "officecli": {
+      "name": "Office 文档处理",
+      "description": "创建、分析、校对和修改 Word、Excel、PowerPoint 文件。"
+    },
+    "sessionMessage": {
+      "name": "跨会话消息",
+      "description": "向其他对话发送消息并回复收到的消息。"
+    },
+    "skillCreator": {
+      "name": "技能创建",
+      "description": "创建或更新可复用的技能及其工作流程。"
+    },
+    "mermaid": {
+      "name": "Mermaid 图表",
+      "description": "生成流程图、时序图、状态图、类图和 ER 图。"
+    },
+    "moltbook": {
+      "name": "Moltbook 社区",
+      "description": "在 AI Agent 社区发帖、评论、点赞并创建社群。"
+    },
+    "morphPpt": {
+      "name": "平滑切换演示文稿",
+      "description": "制作带有跨页平滑动画和形状连续变化的演示文稿。"
+    },
+    "morphPpt3d": {
+      "name": "3D 平滑切换演示文稿",
+      "description": "制作包含 3D 模型、镜头运动和平滑切换的演示文稿。"
+    },
+    "officecliAcademicPaper": {
+      "name": "学术论文",
+      "description": "制作带引用、公式、脚注和参考文献的 Word 学术文档。"
+    },
+    "officecliDataDashboard": {
+      "name": "数据仪表盘",
+      "description": "用 Excel 制作包含指标卡、图表和条件格式的数据仪表盘。"
+    },
+    "officecliDocx": {
+      "name": "Word 文档",
+      "description": "创建、读取和编辑 Word 文档、报告、信函及模板。"
+    },
+    "officecliFinancialModel": {
+      "name": "财务模型",
+      "description": "在 Excel 中制作三表模型、估值模型和情景分析。"
+    },
+    "officecliPitchDeck": {
+      "name": "融资演示文稿",
+      "description": "制作面向投资人的融资路演演示文稿。"
+    },
+    "officecliPptx": {
+      "name": "PowerPoint 演示文稿",
+      "description": "创建、读取和编辑幻灯片、演示文稿及模板。"
+    },
+    "officecliWordForm": {
+      "name": "Word 可填写表单",
+      "description": "制作带内容控件、复选框及受保护区域的 Word 表单。"
+    },
+    "officecliXlsx": {
+      "name": "Excel 电子表格",
+      "description": "创建、读取和编辑电子表格、公式、图表及工作簿。"
+    },
+    "openclawSetup": {
+      "name": "OpenClaw 设置",
+      "description": "安装、部署和配置 OpenClaw，并排查相关问题。"
+    },
+    "pdf": {
+      "name": "PDF 文档处理",
+      "description": "提取、创建、合并、拆分 PDF，并处理表单。"
+    },
+    "storyRoleplay": {
+      "name": "角色扮演",
+      "description": "解析角色卡与世界设定，支持多种文件格式。"
+    },
+    "weixinFileSend": {
+      "name": "微信文件发送",
+      "description": "将本地文件或图片发送给用户。"
+    },
+    "xRecruiter": {
+      "name": "X 招聘发布",
+      "description": "生成招聘文案与图片，并在 X 平台发布岗位。"
+    },
+    "xiaohongshuRecruiter": {
+      "name": "小红书招聘发布",
+      "description": "生成招聘文案与配图，并在小红书发布岗位。"
+    }
+  }
 }

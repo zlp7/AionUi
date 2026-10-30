@@ -569,6 +569,7 @@
     "preset_registered": "Agent preset registered successfully!"
   },
   "thinking": {
+    "process": "Thinking process",
     "complete": "Thought complete",
     "label": "Thinking..."
   },
@@ -632,6 +633,7 @@
   "notFound": "Conversation not found or has been deleted",
   "explorer": {
     "addFolder": "Add folder to project",
+    "uploadFiles": "Upload local files",
     "refreshFiles": "Refresh files",
     "refreshChanges": "Refresh changes",
     "collapseAll": "Collapse all",

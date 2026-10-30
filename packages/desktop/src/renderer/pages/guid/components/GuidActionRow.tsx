@@ -36,6 +36,7 @@ import {
 } from '@icon-park/react';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getBuiltinSkillDisplay } from '@/renderer/utils/skills/builtinSkillDisplay';
 import styles from '../index.module.css';
 
 /**
@@ -102,7 +103,7 @@ type GuidActionRowProps = {
   onModeSelect: (mode: string) => void;
 
   // Skills management
-  allSkills: Array<{ name: string; description: string; isAuto: boolean }>;
+  allSkills: Array<{ name: string; description: string; source?: string; isAuto: boolean }>;
   disabledBuiltinSkills: string[];
   enabledSkills: string[];
   onToggleSkill: (name: string, isAuto: boolean) => void;
@@ -204,7 +205,10 @@ const GuidActionRow: React.FC<GuidActionRowProps> = ({
 
   const skillKeyword = skillQuery.trim().toLowerCase();
   const filteredSkills = skillKeyword
-    ? allSkills.filter((skill) => skill.name.toLowerCase().includes(skillKeyword))
+    ? allSkills.filter((skill) => {
+        const display = getBuiltinSkillDisplay(skill, t);
+        return skill.name.toLowerCase().includes(skillKeyword) || display.name.toLowerCase().includes(skillKeyword);
+      })
     : allSkills;
   const mcpKeyword = mcpQuery.trim().toLowerCase();
   const filteredMcpServers = mcpKeyword
@@ -363,8 +367,8 @@ const GuidActionRow: React.FC<GuidActionRowProps> = ({
           multiSelect: true,
           options: allSkills.map((skill) => ({
             key: skill.name,
-            label: skill.name,
-            description: skill.description || undefined,
+            label: getBuiltinSkillDisplay(skill, t).name,
+            description: getBuiltinSkillDisplay(skill, t).description || undefined,
             active: isSkillChecked(skill),
           })),
           onSelect: (name) => {
@@ -507,7 +511,7 @@ const GuidActionRow: React.FC<GuidActionRowProps> = ({
                   onClick={(e: React.MouseEvent) => e.stopPropagation()}
                   onChange={() => onToggleSkill(skill.name, skill.isAuto)}
                 >
-                  <span className='text-13px'>{skill.name}</span>
+                  <span className='text-13px'>{getBuiltinSkillDisplay(skill, t).name}</span>
                 </Checkbox>
               </Menu.Item>
             ))}

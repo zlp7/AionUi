@@ -569,6 +569,7 @@
     "preset_registered": "에이전트 프리셋이 성공적으로 등록되었습니다!"
   },
   "thinking": {
+    "process": "사고 과정",
     "complete": "사고 완료",
     "label": "생각 중..."
   },
@@ -632,6 +633,7 @@
   "notFound": "대화를 찾을 수 없거나 삭제되었습니다",
   "explorer": {
     "addFolder": "Add folder to project",
+    "uploadFiles": "Upload local files",
     "refreshFiles": "파일 새로 고침",
     "refreshChanges": "변경 새로 고침",
     "collapseAll": "모두 접기",

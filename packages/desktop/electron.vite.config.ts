@@ -1,11 +1,17 @@
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import { execSync } from 'child_process';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { dirname, resolve } from 'path';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import UnoCSS from 'unocss/vite';
 import unoConfig from '../../uno.config.ts';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+import {
+  APP_BRAND_NAME,
+  APP_BRAND_NAME_PLACEHOLDER,
+  BRAND_LOGO_FILE,
+  BRAND_LOGO_OUTPUT_PATHS,
+} from './src/common/config/branding';
 
 // Read the real AionUi version from the repo-root package.json.
 // `packages/desktop/package.json` is a workspace-internal placeholder pinned
@@ -65,6 +71,54 @@ const mainAliases = {
   '@xterm/headless': resolve('packages/desktop/src/common/utils/shims/xterm-headless.ts'),
 };
 
+// Single-source branding: keeps everything derived from `src/common/config/branding.ts`
+// in sync — the logo copies referenced by the UI/index.html/web manifest/service worker
+// (public/logo.png + public/pwa/icon-*.png), the brand name inside index.html, and the
+// PWA manifest name. Swapping the logo or renaming the app never means editing more
+// than that one file.
+function brandPlugin() {
+  const publicDir = resolve('public');
+  const syncBrandLogo = () => {
+    let source: Buffer;
+    try {
+      source = readFileSync(BRAND_LOGO_FILE);
+    } catch {
+      console.warn(`[brand-logo] logo not found: ${BRAND_LOGO_FILE} (keeping existing images)`);
+      return;
+    }
+    for (const fileName of BRAND_LOGO_OUTPUT_PATHS) {
+      const target = resolve(publicDir, fileName);
+      mkdirSync(dirname(target), { recursive: true });
+      if (existsSync(target) && readFileSync(target).equals(source)) continue;
+      writeFileSync(target, source);
+    }
+  };
+
+  // Keep the PWA manifest name in sync with APP_BRAND_NAME (the file ships from
+  // public/ via electron-builder's extraResources, so it has to be written on disk).
+  const syncBrandName = () => {
+    const manifestPath = resolve(publicDir, 'manifest.webmanifest');
+    if (!existsSync(manifestPath)) return;
+    const text = readFileSync(manifestPath, 'utf-8');
+    const next = text
+      .replace(/("name"\s*:\s*")[^"]*(")/, `$1${APP_BRAND_NAME}$2`)
+      .replace(/("short_name"\s*:\s*")[^"]*(")/, `$1${APP_BRAND_NAME}$2`);
+    if (next !== text) writeFileSync(manifestPath, next);
+  };
+
+  return {
+    name: 'aionui:brand',
+    // index.html keeps `%APP_BRAND_NAME%` placeholders instead of a hardcoded name.
+    transformIndexHtml(html: string) {
+      return html.replaceAll(APP_BRAND_NAME_PLACEHOLDER, APP_BRAND_NAME);
+    },
+    buildStart() {
+      syncBrandLogo();
+      syncBrandName();
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const isDevelopment = mode === 'development';
   const enableSentrySourceMaps =
@@ -122,10 +176,13 @@ export default defineConfig(({ mode }) => {
                 // electron-vite builds main process as SSR; viteStaticCopy defaults
                 // to environment: "client" and silently skips non-client environments.
                 environment: 'ssr',
+                // The logo now lives outside the repo (src/common/config/branding.ts).
+                // Stay quiet if that file is missing on a machine that never built the UI.
+                silent: true,
                 targets: [
-                  // Use single * glob to copy top-level items (directories) with their contents intact.
-                  // Using ** would flatten all nested files into the dest root.
-                  { src: 'packages/desktop/src/renderer/assets/logos/*', dest: 'static/images' },
+                  // Keep the legacy static/images/brand/app.png path alive for any runtime
+                  // consumer that still resolves it, fed by the single-source logo file.
+                  { src: BRAND_LOGO_FILE, dest: 'static/images/brand', rename: 'app.png' },
                 ],
               }),
             ]
@@ -240,6 +297,7 @@ export default defineConfig(({ mode }) => {
       plugins: [
         UnoCSS(unoConfig),
         iconParkPlugin(),
+        brandPlugin(),
         ...(enableSentrySourceMaps ? [sentryVitePlugin(sentryPluginOptions)] : []),
       ],
       build: {

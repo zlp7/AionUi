@@ -12,6 +12,8 @@ import { useAgentLogos, resolveAgentAvatar } from '@/renderer/utils/model/agentL
 import ThemedLogo from '@/renderer/components/agent/ThemedLogo';
 import type { AvailableBackend } from './types';
 import { filterAssistantEditorBackends } from './assistantUtils';
+import { resolveAssistantEditorName } from '@/renderer/utils/model/assistantDisplay';
+import { getBuiltinSkillDisplay } from '@/renderer/utils/skills/builtinSkillDisplay';
 import { AionInlineSearchInput } from '@/renderer/components/base';
 import { DROPDOWN_SEARCH_THRESHOLD } from '@/renderer/components/agent/runtimeSelectorOptions';
 import { Avatar, Select, Tag } from '@arco-design/web-react';
@@ -248,14 +250,14 @@ const AssistantEditorSections: React.FC<AssistantEditorSectionsProps> = ({ edito
     availableSkills.forEach((skill) => {
       optionMap.set(skill.name, {
         value: skill.name,
-        label: skill.name,
+        label: getBuiltinSkillDisplay(skill, t).name,
       });
     });
 
     builtinAutoSkills.forEach((skill) => {
       optionMap.set(skill.name, {
         value: skill.name,
-        label: skill.name,
+        label: getBuiltinSkillDisplay({ ...skill, source: 'builtin' }, t).name,
         isAuto: true,
       });
     });
@@ -400,7 +402,7 @@ const AssistantEditorSections: React.FC<AssistantEditorSectionsProps> = ({ edito
         isIdentityLocked={isIdentityLocked}
         isDescriptionReadOnly={isDescriptionReadOnly}
         editAvatar={editAvatar}
-        editName={editName}
+        editName={resolveAssistantEditorName(activeAssistant, editName)}
         setEditName={setEditName}
         editDescription={editDescription}
         setEditDescription={setEditDescription}

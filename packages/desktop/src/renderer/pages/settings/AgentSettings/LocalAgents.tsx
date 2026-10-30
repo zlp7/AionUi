@@ -18,10 +18,9 @@ import { useManagedAgents } from '@/renderer/hooks/agent/useManagedAgents';
 import { openExternalUrl } from '@/renderer/utils/platform';
 import { Button, Message, Typography } from '@arco-design/web-react';
 import TalkToButlerButton from '@/renderer/components/base/TalkToButlerButton';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import AgentCard from './AgentCard';
-import { isDeprecatedRuntimeAgentType } from '@/renderer/utils/model/agentTypeSupportPolicy';
 import InlineAgentEditor, { type CustomAgentDraft } from './InlineAgentEditor';
 import { getBoundAssistants, useAssistantsForAgents } from './BoundAssistants';
 import SettingsPageHeader from '../components/SettingsPageHeader';
@@ -50,11 +49,9 @@ const LocalAgents: React.FC = () => {
   // can change after health checks or custom-agent mutations.
   const { agents: allAgents, isRefreshing, refreshCatalog } = useManagedAgents();
 
-  // Hide deprecated runtime backends (nanobot / openclaw-gateway / remote / gemini)
-  // — they are no longer offered as agents and shouldn't appear on the detection page.
-  const officialAgents = allAgents.filter(
-    (a) => a.agent_source !== 'custom' && !isDeprecatedRuntimeAgentType(a.agent_type)
-  );
+  // Keep the built-in Aion CLI visible; other catalog entries are not needed
+  // on this local management page. User-added agents remain in their own list.
+  const officialAgents = allAgents.filter((agent) => agent.agent_source !== 'custom' && agent.agent_type === 'aionrs');
 
   const customAgents: ManagedAgent[] = allAgents.filter((a) => a.agent_source === 'custom');
 
@@ -123,29 +120,8 @@ const LocalAgents: React.FC = () => {
     [i18n.language, normalizedSearchQuery]
   );
 
-  const sortedOfficialAgents = useMemo(
-    () =>
-      officialAgents.toSorted((left, right) => {
-        const leftIsAionrs = left.agent_type === 'aionrs' || left.backend === 'aionrs';
-        const rightIsAionrs = right.agent_type === 'aionrs' || right.backend === 'aionrs';
-        if (leftIsAionrs !== rightIsAionrs) {
-          return leftIsAionrs ? -1 : 1;
-        }
-        // Strategic partner: pin Kimi right after the builtin aionrs agent.
-        const leftIsKimi = left.backend === 'kimi';
-        const rightIsKimi = right.backend === 'kimi';
-        if (leftIsKimi !== rightIsKimi) {
-          return leftIsKimi ? -1 : 1;
-        }
-        return left.name.localeCompare(right.name);
-      }),
-    [officialAgents]
-  );
-  const officialFilterStats = getAgentAvailabilityFilterStats(sortedOfficialAgents);
-  const visibleOfficialAgents = filterAgentsByAvailability(
-    sortedOfficialAgents.filter(matchesAgentSearch),
-    agentFilter
-  );
+  const officialFilterStats = getAgentAvailabilityFilterStats(officialAgents);
+  const visibleOfficialAgents = filterAgentsByAvailability(officialAgents.filter(matchesAgentSearch), agentFilter);
   const visibleCustomAgents = customAgents.filter(matchesAgentSearch);
 
   const openCustomAgentEditor = useCallback(() => {

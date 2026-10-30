@@ -13,6 +13,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
+import { getBuiltinSkillDisplay } from '@/renderer/utils/skills/builtinSkillDisplay';
 
 type ConversationSkillsIndicatorProps = {
   conversation: TChatConversation | undefined;
@@ -35,7 +36,7 @@ const ConversationSkillsIndicator: React.FC<ConversationSkillsIndicatorProps> = 
 
   if (names.length === 0) return null;
 
-  const descriptionByName = new Map((skillIndex ?? []).map((s) => [s.name, s.description]));
+  const displayByName = new Map((skillIndex ?? []).map((s) => [s.name, getBuiltinSkillDisplay(s, t)]));
 
   const handleSkillClick = (skillName: string) => {
     navigate(`/settings/skills?highlight=${encodeURIComponent(skillName)}`);
@@ -52,9 +53,9 @@ const ConversationSkillsIndicator: React.FC<ConversationSkillsIndicatorProps> = 
             key={name}
             className='flex items-center gap-8px py-4px px-8px rounded-4px hover:bg-2 cursor-pointer text-13px text-t-primary truncate'
             onClick={() => handleSkillClick(name)}
-            title={descriptionByName.get(name) ?? ''}
+            title={displayByName.get(name)?.description ?? ''}
           >
-            {name}
+            {displayByName.get(name)?.name ?? name}
           </div>
         ))}
       </div>

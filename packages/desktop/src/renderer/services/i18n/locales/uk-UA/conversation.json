@@ -577,6 +577,7 @@
     "preset_registered": "Пресет Агента успішно зареєстровано!"
   },
   "thinking": {
+    "process": "Хід міркувань",
     "complete": "Роздуми завершено",
     "label": "Розмірковує..."
   },
@@ -640,6 +641,7 @@
   "notFound": "Розмову не знайдено або її видалено",
   "explorer": {
     "addFolder": "Add folder to project",
+    "uploadFiles": "Upload local files",
     "refreshFiles": "Оновити файли",
     "refreshChanges": "Оновити зміни",
     "collapseAll": "Згорнути все",

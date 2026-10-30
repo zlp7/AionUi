@@ -1,6 +1,6 @@
 {
-  "pageTitle": "AionUi - Anmelden",
-  "brand": "AionUi",
+  "pageTitle": "{{brand}} - Anmelden",
+  "brand": "{{brand}}",
   "subtitle": "Willkommen zurück, bitte melde dich in deinem Konto an",
   "username": "Benutzername",
   "usernamePlaceholder": "Benutzernamen eingeben",

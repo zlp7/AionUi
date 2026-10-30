@@ -16,13 +16,15 @@
  * reveal / explicit add-to-chat; see {@link SearchPanel}).
  */
 
-import { Button, Input, Message, Modal, Spin, Tooltip } from '@arco-design/web-react';
-import { FoldUpOne, FolderPlus, Refresh } from '@icon-park/react';
+import { Button, Input, Message, Modal, Spin, Tooltip, Upload } from '@arco-design/web-react';
+import { FoldUpOne, FolderPlus, Refresh, UploadOne } from '@icon-park/react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 
 import { dispatchWorkspaceHasFilesEvent } from '@/renderer/utils/workspace/workspaceEvents';
+import { uploadFileViaHttp } from '@/renderer/services/FileService';
+import { isElectronDesktop } from '@/renderer/utils/platform';
 
 import { ipcBridge } from '@/common';
 import { isBackendHttpError } from '@/common/adapter/httpBridge';
@@ -37,6 +39,7 @@ import type { PreviewContentType } from '@/common/types/office/preview';
 import { copyText } from '@/renderer/utils/ui/clipboard';
 import { emitter } from '@/renderer/utils/emitter';
 import { projectFileRef } from '@/common/types/chatFile';
+import { downloadFileFromRef } from '@/renderer/utils/file/download';
 import type { ChatFileRef } from '@/common/types/chatFile';
 import type { FileOrFolderItem } from '@/renderer/utils/file/fileTypes';
 import { resolvePreviewPayload } from '@/renderer/utils/file/previewPayload';
@@ -256,6 +259,7 @@ export const ExplorerContainer: React.FC<ExplorerContainerProps> = ({ projectId 
   // Busy flag for the top-bar refresh: spins the icon and disables re-click while a
   // refresh is in flight (so rapid clicks don't fan out redundant backend round-trips).
   const [refreshing, setRefreshing] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
   // One dialog for rename / new-file / new-folder (see NameDialogState); the
   // `mode` discriminant drives the title, ok label, request builder, and the
   // post-create reveal below.
@@ -352,6 +356,12 @@ export const ExplorerContainer: React.FC<ExplorerContainerProps> = ({ projectId 
     Message.success(t('conversation.explorer.addedToChat', { name }));
   };
 
+  const handleDownloadFile = (peId: string, rel: string, name: string): void => {
+    void downloadFileFromRef(projectFileRef(peId, rel), name).catch(() => {
+      Message.error(t('conversation.workspace.contextMenu.downloadFailed'));
+    });
+  };
+
   // Reveal a node in the OS file manager. The backend resolves the pe-ref to an
   // absolute path and calls shell.showItemInFolder — the front end never builds
   // the absolute path (avoids the Windows verbatim `\\?\` pitfall). The menu item
@@ -425,6 +435,44 @@ export const ExplorerContainer: React.FC<ExplorerContainerProps> = ({ projectId 
       }
     } catch {
       Message.error(t('conversation.explorer.importFailed'));
+    }
+  };
+
+  const handleUploadFiles = async (peId: string, rel: string, files: File[]): Promise<void> => {
+    if (files.length === 0) return;
+    setUploadingFiles(true);
+    try {
+      const uploadedPaths: string[] = [];
+      let uploadFailures = 0;
+      for (const file of files) {
+        try {
+          uploadedPaths.push(await uploadFileViaHttp(file));
+        } catch {
+          uploadFailures += 1;
+        }
+      }
+      if (uploadedPaths.length === 0) {
+        Message.error(t('conversation.explorer.importFailed'));
+        return;
+      }
+      const result = await ipcBridge.fs.copyFilesToProject.invoke({
+        file_paths: uploadedPaths,
+        target: { pe_id: peId, relative_path: rel },
+      });
+      const copied = result.copied_files.length;
+      const failed = uploadFailures + result.failed_files.length;
+      if (copied === 0) {
+        Message.error(t('conversation.explorer.importFailed'));
+      } else if (failed > 0) {
+        Message.warning(t('conversation.explorer.importPartialFailed', { failed, copied }));
+      } else {
+        Message.success(t('conversation.explorer.imported', { count: copied }));
+      }
+      if (copied > 0) void refreshRoot(peId);
+    } catch {
+      Message.error(t('conversation.explorer.importFailed'));
+    } finally {
+      setUploadingFiles(false);
     }
   };
 
@@ -545,6 +593,27 @@ export const ExplorerContainer: React.FC<ExplorerContainerProps> = ({ projectId 
           {tabButton('changes', t('conversation.explorer.tabs.changes'))}
         </div>
         <div className='flex items-center gap-2px flex-shrink-0'>
+          {!isElectronDesktop() && workspacePeId && (
+            <Tooltip content={t('conversation.explorer.uploadFiles')} mini position='br'>
+              <Upload
+                autoUpload={false}
+                showUploadList={false}
+                fileList={[]}
+                disabled={uploadingFiles}
+                onChange={(_fileList, file) => {
+                  if (file.originFile) void handleUploadFiles(workspacePeId, '', [file.originFile]);
+                }}
+              >
+                <Button
+                  type='text'
+                  size='small'
+                  loading={uploadingFiles}
+                  icon={<UploadOne theme='outline' size='16' />}
+                  aria-label={t('conversation.explorer.uploadFiles')}
+                />
+              </Upload>
+            </Tooltip>
+          )}
           {/* Right cluster order (VS Code parity): project-scope actions first (add
               folder, open workspace), then view actions grouped at the far right
               (refresh, collapse-all). Refresh shows on both tabs (tab-scoped
@@ -629,6 +698,7 @@ export const ExplorerContainer: React.FC<ExplorerContainerProps> = ({ projectId 
             workspacePeId={workspacePeId}
             onRemoveRoot={handleRemoveFolder}
             onOpenFile={handleOpenFile}
+            onDownloadFile={handleDownloadFile}
             onRename={handleRename}
             onDelete={handleDelete}
             onNewFile={handleNewFile}
@@ -638,6 +708,7 @@ export const ExplorerContainer: React.FC<ExplorerContainerProps> = ({ projectId 
             onCopyRelativePath={handleCopyRelativePath}
             onCopyAbsolutePath={handleCopyAbsolutePath}
             onImportFiles={handleImportFiles}
+            onUploadFiles={!isElectronDesktop() ? handleUploadFiles : undefined}
             onTransfer={handleTransfer}
           />
         </SearchPanel>

@@ -13,6 +13,7 @@ import {
   type SupportedLanguage,
 } from '@/common/config/i18n';
 import { applyDocumentDirection } from './direction';
+import { brandNamePostProcessor } from './brandName';
 
 // Static imports for all locales to ensure packaged app can always switch language.
 import enUS from './locales/en-US/index';
@@ -126,12 +127,16 @@ if (initialLanguage !== DEFAULT_LANGUAGE) {
 // only as hints for the initial render, then let configService be the source of truth.
 i18n
   .use(initReactI18next)
+  .use(brandNamePostProcessor)
   .init({
     resources: initialResources,
     lng: initialLanguage,
     fallbackLng: DEFAULT_LANGUAGE,
     debug: false,
     interpolation: { escapeValue: false },
+    // Rewrite the product name inside translated copy from the single source in
+    // `@/common/config/branding` — see ./brandName.ts.
+    postProcess: ['brand'],
   })
   .catch((error: Error) => {
     console.error('Failed to initialize i18n:', error);

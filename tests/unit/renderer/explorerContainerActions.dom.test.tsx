@@ -28,7 +28,14 @@ vi.mock('@/renderer/utils/emitter', () => ({ emitter: { emit: (...a: unknown[]) 
 const copyText = vi.fn();
 vi.mock('@/renderer/utils/ui/clipboard', () => ({ copyText: (t: string) => copyText(t) }));
 
+const downloadFileFromRef = vi.fn();
+vi.mock('@/renderer/utils/file/download', () => ({
+  downloadFileFromRef: (file: unknown, name: string) => downloadFileFromRef(file, name),
+}));
+
 const copyAbsolutePath = vi.fn<(p: { pe_id: string; relative_path: string }) => Promise<void>>();
+const uploadFile = vi.fn<(file: File) => Promise<string>>();
+vi.mock('@/renderer/services/FileService', () => ({ uploadFileViaHttp: (file: File) => uploadFile(file) }));
 
 // Controllable active conversation id for add-to-chat targeting.
 let activeConversationId: string | null = null;
@@ -44,20 +51,24 @@ vi.mock('@/renderer/pages/conversation/explorer/ExplorerPanel', () => ({
     roots,
     onRemoveRoot,
     onOpenFile,
+    onDownloadFile,
     onAddToChat,
     onCopyRelativePath,
     onCopyAbsolutePath,
     onImportFiles,
+    onUploadFiles,
     onNewFile,
     onNewDir,
   }: {
     roots: Array<{ title: string }>;
     onRemoveRoot?: (id: string) => void;
     onOpenFile?: (pe: string, rel: string) => void;
+    onDownloadFile?: (pe: string, rel: string, name: string) => void;
     onAddToChat?: (pe: string, rel: string, name: string, isFile: boolean) => void;
     onCopyRelativePath?: (pe: string, rel: string, name: string) => void;
     onCopyAbsolutePath?: (pe: string, rel: string) => void;
     onImportFiles?: (pe: string, rel: string, paths: string[]) => void;
+    onUploadFiles?: (pe: string, rel: string, files: File[]) => void;
     onNewFile?: (pe: string, dirRel: string) => void;
     onNewDir?: (pe: string, dirRel: string) => void;
   }) => (
@@ -82,11 +93,17 @@ vi.mock('@/renderer/pages/conversation/explorer/ExplorerPanel', () => ({
       <button data-testid='do-open' onClick={() => onOpenFile?.('peA', 'docs/readme.md')}>
         open
       </button>
+      <button data-testid='do-download' onClick={() => onDownloadFile?.('peA', 'docs/readme.md', 'readme.md')}>
+        download
+      </button>
       <button data-testid='do-add-to-chat' onClick={() => onAddToChat?.('peA', 'src/main.ts', 'main.ts', true)}>
         add
       </button>
       <button data-testid='do-import' onClick={() => onImportFiles?.('peA', 'sub', ['/os/a.txt', '/os/b.txt'])}>
         import
+      </button>
+      <button data-testid='do-upload' onClick={() => onUploadFiles?.('peA', 'sub', [new File(['data'], 'a.txt')])}>
+        upload
       </button>
       <button data-testid='do-new-file' onClick={() => onNewFile?.('peA', 'src')}>
         new-file
@@ -169,8 +186,10 @@ beforeEach(() => {
   showOpen.mockReset();
   openPreview.mockReset();
   copyFiles.mockReset().mockResolvedValue({ copied_files: [], failed_files: [] });
+  uploadFile.mockReset().mockResolvedValue('/tmp/aionui/a.txt');
   emit.mockReset();
   copyText.mockReset().mockResolvedValue(undefined);
+  downloadFileFromRef.mockReset().mockResolvedValue(undefined);
   copyAbsolutePath.mockReset().mockResolvedValue(undefined);
   activeConversationId = null;
   fsRead.mockReset().mockResolvedValue({ content: 'hello', encoding: 'utf-8' });
@@ -365,6 +384,48 @@ describe('ExplorerContainer add-to-chat', () => {
 });
 
 describe('ExplorerContainer A-paste import', () => {
+  it('uploads browser files, then copies their managed paths into the dropped directory', async () => {
+    const desktopBridge = window.electronAPI;
+    Object.defineProperty(window, 'electronAPI', { value: undefined, configurable: true });
+    copyFiles.mockResolvedValue({ copied_files: ['/ws/sub/a.txt'], failed_files: [] });
+    try {
+      renderIt();
+      fireEvent.click(await screen.findByTestId('do-upload'));
+      await waitFor(() => expect(uploadFile).toHaveBeenCalledWith(expect.objectContaining({ name: 'a.txt' })));
+      await waitFor(() =>
+        expect(copyFiles).toHaveBeenCalledWith({
+          file_paths: ['/tmp/aionui/a.txt'],
+          target: { pe_id: 'peA', relative_path: 'sub' },
+        })
+      );
+      await waitFor(() => expect(Message.success).toHaveBeenCalled());
+    } finally {
+      Object.defineProperty(window, 'electronAPI', { value: desktopBridge, configurable: true });
+    }
+  });
+
+  it('offers a WebUI upload button that imports a selected file into the workspace root', async () => {
+    const desktopBridge = window.electronAPI;
+    Object.defineProperty(window, 'electronAPI', { value: undefined, configurable: true });
+    copyFiles.mockResolvedValue({ copied_files: ['/ws/a.txt'], failed_files: [] });
+    try {
+      renderIt();
+      await screen.findByTestId('roots');
+      expect(screen.getByLabelText('conversation.explorer.uploadFiles')).toBeInTheDocument();
+      const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+      expect(input).not.toBeNull();
+      fireEvent.change(input!, { target: { files: [new File(['data'], 'a.txt')] } });
+      await waitFor(() =>
+        expect(copyFiles).toHaveBeenCalledWith({
+          file_paths: ['/tmp/aionui/a.txt'],
+          target: { pe_id: 'peA', relative_path: '' },
+        })
+      );
+    } finally {
+      Object.defineProperty(window, 'electronAPI', { value: desktopBridge, configurable: true });
+    }
+  });
+
   it('copies dropped files to the pe-targeted dir via /api/fs/copy', async () => {
     copyFiles.mockResolvedValue({ copied_files: ['/ws/sub/a.txt', '/ws/sub/b.txt'], failed_files: [] });
     renderIt();
@@ -455,6 +516,26 @@ describe('ExplorerContainer A-paste import', () => {
     renderIt();
     fireEvent.click(await screen.findByTestId('do-copy-abs'));
     await waitFor(() => expect(Message.error).toHaveBeenCalledWith('conversation.explorer.copyFailed'));
+  });
+});
+
+describe('ExplorerContainer download', () => {
+  it('downloads the selected project file with its original name', async () => {
+    renderIt();
+    fireEvent.click(await screen.findByTestId('do-download'));
+    expect(downloadFileFromRef).toHaveBeenCalledWith(
+      { kind: 'project', pe_id: 'peA', relative_path: 'docs/readme.md' },
+      'readme.md'
+    );
+  });
+
+  it('shows an error when downloading fails', async () => {
+    downloadFileFromRef.mockRejectedValueOnce(new Error('network'));
+    renderIt();
+    fireEvent.click(await screen.findByTestId('do-download'));
+    await waitFor(() =>
+      expect(Message.error).toHaveBeenCalledWith('conversation.workspace.contextMenu.downloadFailed')
+    );
   });
 });
 

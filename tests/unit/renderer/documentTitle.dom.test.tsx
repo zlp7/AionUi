@@ -19,15 +19,16 @@ vi.mock('react-i18next', () => ({
 }));
 
 import DocumentTitle, { titleForPath } from '@/renderer/components/layout/DocumentTitle';
+import { APP_BRAND_NAME } from '@/common/config/branding';
 
 describe('titleForPath', () => {
   const t = (key: string) => `t(${key})`;
 
   it('uses the login title on the login route only', () => {
     expect(titleForPath('/login', t)).toBe('t(login.pageTitle)');
-    expect(titleForPath('/guid', t)).toBe('AionUi');
-    expect(titleForPath('/conversation/abc', t)).toBe('AionUi');
-    expect(titleForPath('/settings/agent', t)).toBe('AionUi');
+    expect(titleForPath('/guid', t)).toBe(APP_BRAND_NAME);
+    expect(titleForPath('/conversation/abc', t)).toBe(APP_BRAND_NAME);
+    expect(titleForPath('/settings/agent', t)).toBe(APP_BRAND_NAME);
   });
 });
 
@@ -35,13 +36,13 @@ describe('DocumentTitle', () => {
   it('resets the title to AionUi after leaving the login page', () => {
     // The old behaviour set document.title once on the login page and never
     // updated it again, so post-login pages kept the login title.
-    document.title = 'AionUi - stale login title';
+    document.title = `${APP_BRAND_NAME} - stale login title`;
     render(
       <MemoryRouter initialEntries={['/guid']}>
         <DocumentTitle />
       </MemoryRouter>
     );
-    expect(document.title).toBe('AionUi');
+    expect(document.title).toBe(APP_BRAND_NAME);
   });
 
   it('sets the localised login title on the login route', () => {

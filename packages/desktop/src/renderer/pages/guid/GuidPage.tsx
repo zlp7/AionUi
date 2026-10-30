@@ -38,6 +38,7 @@ import { ArrowRightUp } from '@icon-park/react';
 import { Button, ConfigProvider } from '@arco-design/web-react';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getBuiltinSkillDisplay } from '@/renderer/utils/skills/builtinSkillDisplay';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import styles from './index.module.css';
@@ -76,7 +77,9 @@ const GuidPage: React.FC = () => {
   // Skill metadata comes from the database-backed catalog. Built-in auto-inject
   // skills default checked; the rest are opt-in per conversation or pre-checked
   // by assistant defaults.
-  const [allSkills, setAllSkills] = useState<Array<{ name: string; description: string; isAuto: boolean }>>([]);
+  const [allSkills, setAllSkills] = useState<
+    Array<{ name: string; description: string; source?: string; isAuto: boolean }>
+  >([]);
   const [guidDisabledBuiltinSkills, setGuidDisabledBuiltinSkills] = useState<string[] | undefined>(undefined);
   const [guidEnabledSkills, setGuidEnabledSkills] = useState<string[] | undefined>(undefined);
   const [availableMcpServers, setAvailableMcpServers] = useState<IMcpServer[]>([]);
@@ -90,6 +93,7 @@ const GuidPage: React.FC = () => {
           availableSkills.map((s) => ({
             name: s.name,
             description: s.description,
+            source: s.source,
             isAuto: s.source === 'builtin' && s.is_auto_inject,
           }))
         );
@@ -189,8 +193,8 @@ const GuidPage: React.FC = () => {
     resolvedAssistantDefaults.skillIds,
   ]);
   const skillDescriptionByName = useMemo(
-    () => new Map(allSkills.map((skill) => [skill.name, skill.description])),
-    [allSkills]
+    () => new Map(allSkills.map((skill) => [skill.name, getBuiltinSkillDisplay(skill, t).description])),
+    [allSkills, t]
   );
   const guidBuiltinSlashCommands = useMemo<SlashCommandItem[]>(
     () => [

@@ -569,6 +569,7 @@
     "preset_registered": "Agent preset registered successfully!"
   },
   "thinking": {
+    "process": "思考過程",
     "complete": "思考完成",
     "label": "思考中..."
   },
@@ -632,6 +633,7 @@
   "notFound": "會話不存在或已被刪除",
   "explorer": {
     "addFolder": "新增資料夾到專案",
+    "uploadFiles": "上傳本機檔案",
     "refreshFiles": "重新整理檔案",
     "refreshChanges": "重新整理變更",
     "collapseAll": "全部摺疊",

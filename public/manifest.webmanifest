@@ -1,6 +1,6 @@
 {
-  "name": "AionUi",
-  "short_name": "AionUi",
+  "name": "wxzAI",
+  "short_name": "wxzAI",
   "description": "AionUi WebUI for mobile and desktop browsers.",
   "start_url": "./",
   "scope": "./",

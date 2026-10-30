@@ -569,6 +569,7 @@
     "preset_registered": "پیش‌تنظیم ایجنت با موفقیت ثبت شد!"
   },
   "thinking": {
+    "process": "فرآیند تفکر",
     "complete": "تفکر کامل شد",
     "label": "در حال فکر کردن..."
   },
@@ -632,6 +633,7 @@
   "notFound": "مکالمه یافت نشد یا حذف شده است",
   "explorer": {
     "addFolder": "Add folder to project",
+    "uploadFiles": "Upload local files",
     "refreshFiles": "به‌روزرسانی پرونده‌ها",
     "refreshChanges": "به‌روزرسانی تغییرات",
     "collapseAll": "جمع کردن همه",

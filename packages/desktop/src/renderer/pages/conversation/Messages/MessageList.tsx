@@ -5,15 +5,21 @@
  */
 
 import type { IConversationArtifact } from '@/common/adapter/ipcBridge';
-import type { IMessageAcpToolCall, IMessageToolCall, IMessageToolGroup, TMessage } from '@/common/chat/chatLib';
+import type {
+  IMessageAcpToolCall,
+  IMessageThinking,
+  IMessageToolCall,
+  IMessageToolGroup,
+  TMessage,
+} from '@/common/chat/chatLib';
 import { useConversationContextSafe } from '@/renderer/hooks/context/ConversationContext';
 import { useConversationRuntimeView } from '@/renderer/pages/conversation/runtime/useConversationRuntimeView';
 import { getChatSurfaceWidthClass } from '@/renderer/pages/conversation/utils/chatSurfaceWidth';
 import { iconColors } from '@/renderer/styles/colors';
 import { CHAT_MESSAGE_JUMP_EVENT, type ChatMessageJumpDetail } from '@/renderer/utils/chat/chatMinimapEvents';
 import { collectAiCopyRows, type TurnCopyItem } from '@/renderer/utils/chat/turnCopy';
-import { Image } from '@arco-design/web-react';
-import { Down } from '@icon-park/react';
+import { Button, Image } from '@arco-design/web-react';
+import { Brain, Down, Right } from '@icon-park/react';
 import MessageAcpPermission from '@renderer/pages/conversation/Messages/acp/MessageAcpPermission';
 import MessageQuestion from './MessageQuestion';
 import MessagePermission from './components/MessagePermission';
@@ -50,16 +56,26 @@ import type { WriteFileResult } from './types';
 import { useAutoScroll } from './useAutoScroll';
 import SelectionReplyButton from './components/SelectionReplyButton';
 
+type IToolSummary = {
+  type: 'tool_summary';
+  id: string;
+  messages: Array<IMessageToolGroup | IMessageAcpToolCall | IMessageToolCall>;
+  sourceMessageIds: string[];
+  created_at: number;
+};
+type IProcessStep = IToolSummary | IMessageThinking;
+type IProcessSummary = {
+  type: 'process_summary';
+  id: string;
+  items: IProcessStep[];
+  sourceMessageIds: string[];
+  created_at: number;
+};
 type IMessageVO =
   | TMessage
   | { type: 'file_summary'; id: string; diffs: FileChangeInfo[]; sourceMessageIds: string[]; created_at: number }
-  | {
-      type: 'tool_summary';
-      id: string;
-      messages: Array<IMessageToolGroup | IMessageAcpToolCall | IMessageToolCall>;
-      sourceMessageIds: string[];
-      created_at: number;
-    };
+  | IToolSummary
+  | IProcessSummary;
 type IArtifactVO = { type: 'artifact'; id: string; artifact: IConversationArtifact; created_at: number };
 type IProcessedItem = IMessageVO | IArtifactVO;
 
@@ -114,7 +130,7 @@ const getProcessedItemSourceMessageIds = (item: IProcessedItem): string[] => {
   if ('type' in item && item.type === 'artifact') {
     return [item.id];
   }
-  if ('type' in item && item.type === 'tool_summary') {
+  if ('type' in item && (item.type === 'tool_summary' || item.type === 'process_summary')) {
     return item.sourceMessageIds;
   }
   if ('type' in item && item.type === 'file_summary') {
@@ -136,7 +152,7 @@ const getProcessedItemAnchorId = (item: IProcessedItem): string => {
 };
 
 const getProcessedItemCreatedAt = (item: IProcessedItem): number => {
-  if ('type' in item && ['file_summary', 'tool_summary', 'artifact'].includes(item.type)) {
+  if ('type' in item && ['file_summary', 'tool_summary', 'process_summary', 'artifact'].includes(item.type)) {
     return item.created_at;
   }
   return item.created_at ?? 0;
@@ -149,6 +165,42 @@ const highlightStyle: React.CSSProperties = {
 };
 
 const getUnhandledMessageType = (_message: never): string => 'unknown';
+
+const MessageProcessSummary: React.FC<{ items: IProcessStep[]; revealTarget: boolean }> = ({ items, revealTarget }) => {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (revealTarget) setExpanded(true);
+  }, [revealTarget]);
+
+  return (
+    <div className='message-process-summary'>
+      <Button
+        type='text'
+        size='mini'
+        className='message-process-summary__toggle'
+        aria-expanded={expanded}
+        onClick={() => setExpanded((value) => !value)}
+      >
+        <Brain theme='outline' size='14' />
+        <span>{t('conversation.thinking.process')}</span>
+        <Right theme='outline' size='12' className={expanded ? 'message-process-summary__arrow--open' : ''} />
+      </Button>
+      {expanded && (
+        <div className='message-process-summary__body'>
+          {items.map((item) =>
+            item.type === 'thinking' ? (
+              <MessageThinking key={item.id} message={item} />
+            ) : (
+              <MessageToolGroupSummary key={item.id} messages={item.messages} />
+            )
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Image preview context
 export const ImagePreviewContext = createContext<{ inPreviewGroup: boolean }>({ inPreviewGroup: false });
@@ -454,9 +506,31 @@ const MessageList: React.FC<{ className?: string; emptySlot?: React.ReactNode }>
         created_at: artifact.created_at,
       }));
 
-    return [...result, ...visibleArtifacts].toSorted(
+    const chronological = [...result, ...visibleArtifacts].toSorted(
       (a, b) => getProcessedItemCreatedAt(a) - getProcessedItemCreatedAt(b)
     );
+    const grouped: IProcessedItem[] = [];
+    let currentProcess: IProcessSummary | undefined;
+    for (const item of chronological) {
+      if (item.type === 'thinking' || item.type === 'tool_summary') {
+        if (!currentProcess) {
+          currentProcess = {
+            type: 'process_summary',
+            id: `process-summary-${item.id}`,
+            items: [],
+            sourceMessageIds: [],
+            created_at: item.created_at ?? 0,
+          };
+          grouped.push(currentProcess);
+        }
+        currentProcess.items.push(item);
+        currentProcess.sourceMessageIds.push(...getProcessedItemSourceMessageIds(item));
+      } else {
+        currentProcess = undefined;
+        grouped.push(item);
+      }
+    }
+    return grouped;
   }, [artifacts, list]);
 
   // An AI reply can be split into several messages (thinking / multiple text /
@@ -481,7 +555,10 @@ const MessageList: React.FC<{ className?: string; emptySlot?: React.ReactNode }>
       const item = processedList[i];
       if (
         'type' in item &&
-        (item.type === 'file_summary' || item.type === 'tool_summary' || item.type === 'artifact')
+        (item.type === 'file_summary' ||
+          item.type === 'tool_summary' ||
+          item.type === 'process_summary' ||
+          item.type === 'artifact')
       ) {
         continue;
       }
@@ -500,7 +577,10 @@ const MessageList: React.FC<{ className?: string; emptySlot?: React.ReactNode }>
     for (const item of processedList) {
       if (
         'type' in item &&
-        (item.type === 'file_summary' || item.type === 'tool_summary' || item.type === 'artifact')
+        (item.type === 'file_summary' ||
+          item.type === 'tool_summary' ||
+          item.type === 'process_summary' ||
+          item.type === 'artifact')
       ) {
         continue;
       }
@@ -614,9 +694,22 @@ const MessageList: React.FC<{ className?: string; emptySlot?: React.ReactNode }>
         return;
 
       const targetIndex = processedList.findIndex((item) => {
+        if (item.type === 'process_summary') {
+          return (
+            (detail.messageId && item.sourceMessageIds.includes(detail.messageId)) ||
+            (detail.msgId &&
+              item.items.some((step) =>
+                step.type === 'thinking'
+                  ? step.msg_id === detail.msgId
+                  : step.messages.some((message) => message.msg_id === detail.msgId)
+              )) ||
+            false
+          );
+        }
         if (
           (item as { type?: string }).type === 'file_summary' ||
           (item as { type?: string }).type === 'tool_summary' ||
+          (item as { type?: string }).type === 'process_summary' ||
           (item as { type?: string }).type === 'artifact'
         ) {
           return false;
@@ -646,6 +739,14 @@ const MessageList: React.FC<{ className?: string; emptySlot?: React.ReactNode }>
       }
 
       hideScrollButton();
+      const targetItem = processedList[targetIndex];
+      if (targetItem.type === 'process_summary') {
+        const highlightId = detail.messageId || targetItem.sourceMessageIds[0];
+        setHighlightedMessageId(highlightId);
+        window.setTimeout(() => {
+          setHighlightedMessageId((current) => (current === highlightId ? undefined : current));
+        }, 2400);
+      }
       requestAnimationFrame(() => {
         const targetElement = document.getElementById(
           `message-${getProcessedItemAnchorId(processedList[targetIndex])}`
@@ -692,6 +793,18 @@ const MessageList: React.FC<{ className?: string; emptySlot?: React.ReactNode }>
           ) : (
             <MessageSkillSuggest artifact={item.artifact} />
           )}
+        </div>
+      );
+    }
+    if ('type' in item && item.type === 'process_summary') {
+      return (
+        <div
+          key={item.id}
+          id={`message-${getProcessedItemAnchorId(item)}`}
+          className={`${rowWidthClass} min-w-0 message-item px-8px m-t-10px process_summary`}
+          style={highlighted ? highlightStyle : undefined}
+        >
+          <MessageProcessSummary items={item.items} revealTarget={highlighted} />
         </div>
       );
     }

@@ -577,6 +577,7 @@
     "preset_registered": "Пресет агента успешно зарегистрирован!"
   },
   "thinking": {
+    "process": "Ход рассуждений",
     "complete": "Размышление завершено",
     "label": "Размышляет..."
   },
@@ -640,6 +641,7 @@
   "notFound": "Беседа не найдена или была удалена",
   "explorer": {
     "addFolder": "Add folder to project",
+    "uploadFiles": "Upload local files",
     "refreshFiles": "Обновить файлы",
     "refreshChanges": "Обновить изменения",
     "collapseAll": "Свернуть все",

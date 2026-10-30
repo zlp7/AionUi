@@ -29,6 +29,7 @@ import useSWR, { mutate as swrMutate } from 'swr';
 import SettingsPageWrapper from '../components/SettingsPageWrapper';
 import SkillFileBrowser from './SkillFileBrowser';
 import { getAssistantsUsingSkill } from './SkillUsedByStack';
+import { getBuiltinSkillDisplay } from '@/renderer/utils/skills/builtinSkillDisplay';
 
 interface SkillInfo {
   name: string;
@@ -91,6 +92,7 @@ const SkillDetailPage: React.FC = () => {
   } = useSWR<Assistant[]>('assistants.list', () => ipcBridge.assistants.list.invoke());
 
   const skill = useMemo(() => (skills ?? []).find((s) => s.name === decodedName), [skills, decodedName]);
+  const skillDisplay = skill ? getBuiltinSkillDisplay(skill, t) : null;
   const usingAssistants = useMemo(
     () => getAssistantsUsingSkill(decodedName, assistants ?? []),
     [assistants, decodedName]
@@ -214,13 +216,13 @@ const SkillDetailPage: React.FC = () => {
                 </div>
                 <div className='min-w-0 flex flex-col gap-6px'>
                   <div className='flex items-center gap-8px'>
-                    <span className='text-16px font-600 text-t-primary'>{skill.name}</span>
+                    <span className='text-16px font-600 text-t-primary'>{skillDisplay?.name}</span>
                     <span className='rounded-4px border border-border-2 bg-fill-1 px-6px py-1px text-11px text-t-secondary'>
                       {sourceLabel(skill)}
                     </span>
                   </div>
                   <p className='m-0 text-13px leading-relaxed text-t-secondary'>
-                    {skill.description ||
+                    {skillDisplay?.description ||
                       t('settings.skillsHub.detailNoDescription', { defaultValue: 'No description.' })}
                   </p>
                 </div>

@@ -4,6 +4,7 @@ import { ArrowLeft } from '@icon-park/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import AssistantEditorSections from './AssistantEditorSections';
+import { resolveAssistantEditorName } from '@/renderer/utils/model/assistantDisplay';
 
 type AssistantEditorPageProps = {
   editor: AssistantEditorViewModel;
@@ -16,6 +17,7 @@ const AssistantEditorPage: React.FC<AssistantEditorPageProps> = ({ editor, activ
   const { isCreating, actions, profile } = editor;
   const canDelete = !isCreating && activeAssistant?.source === 'user';
   const canSave = isCreating || Boolean(activeAssistant);
+  const displayName = resolveAssistantEditorName(activeAssistant, profile.name).trim();
 
   return (
     <div data-testid='assistant-editor-page' className='flex h-full min-h-0 flex-col overflow-hidden bg-transparent'>
@@ -34,7 +36,7 @@ const AssistantEditorPage: React.FC<AssistantEditorPageProps> = ({ editor, activ
             {t('settings.assistantBackToList', { defaultValue: 'All assistants' })}
           </Button>
           <div className='truncate text-14px font-600 text-t-primary'>
-            {profile.name.trim() ||
+            {displayName ||
               (isCreating
                 ? t('settings.createAssistant', { defaultValue: 'Create Assistant' })
                 : t('settings.editAssistant', { defaultValue: 'Assistant Details' }))}

@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import type { Assistant } from '@/common/types/agent/assistantTypes';
 import type { ICronJob } from '@/common/adapter/ipcBridge';
 import { getJobAgentMeta } from '@/renderer/pages/cron/ScheduledTasksPage/jobAgentMeta';
+import { AION_CLI_DISPLAY_NAME } from '@/common/config/branding';
 
 const LOGOS = { codex: '/api/assets/logos/tools/coding/codex.svg' };
 
@@ -37,6 +38,60 @@ describe('getJobAgentMeta', () => {
       name: '文件规划助手',
       emoji: '🤖',
     });
+  });
+
+  it('uses the saved task name for a generated CLI assistant', () => {
+    const meta = getJobAgentMeta(
+      cronJob({
+        metadata: {
+          agent_type: 'aionrs',
+          agent_config: { assistant_id: 'bare-aionrs', name: '星地网络Agent' },
+        },
+      }),
+      [
+        assistant({
+          id: 'bare-aionrs',
+          source: 'generated',
+          name: 'Aion CLI',
+          agent: { type: 'aionrs', source: 'internal' },
+        }),
+      ],
+      LOGOS
+    );
+
+    expect(meta.name).toBe('星地网络Agent');
+  });
+
+  it('shows the configured Agent name for an existing Aion CLI task', () => {
+    const meta = getJobAgentMeta(
+      cronJob({
+        metadata: {
+          agent_type: 'aionrs',
+          agent_config: { assistant_id: 'bare-aionrs', name: 'Aion CLI' },
+        },
+      }),
+      [
+        assistant({
+          id: 'bare-aionrs',
+          source: 'generated',
+          name: 'Aion CLI',
+          agent: { type: 'aionrs', source: 'internal' },
+        }),
+      ],
+      LOGOS
+    );
+
+    expect(meta.name).toBe(AION_CLI_DISPLAY_NAME);
+  });
+
+  it('shows the configured Agent name when an older task has no assistant id', () => {
+    const meta = getJobAgentMeta(
+      cronJob({ metadata: { agent_type: 'aionrs', agent_config: { name: 'Aion CLI' } } }),
+      [],
+      LOGOS
+    );
+
+    expect(meta.name).toBe(AION_CLI_DISPLAY_NAME);
   });
 
   it('falls back to cron payload metadata for legacy jobs without assistant identity', () => {

@@ -14,6 +14,7 @@ import TalkToButlerButton from '@/renderer/components/base/TalkToButlerButton';
 import { AionSearchInput } from '@/renderer/components/base';
 import { formatDateTime } from '@/renderer/services/i18n/format';
 import { buildSkillImportNotice, getSkillImportErrorMessage } from './skillImportMessages';
+import { getBuiltinSkillDisplay } from '@/renderer/utils/skills/builtinSkillDisplay';
 
 // Skill 信息类型 / Skill info type
 interface SkillInfo {
@@ -185,13 +186,17 @@ const SkillsHubSettings: React.FC<SkillsHubSettingsProps> = ({ withWrapper = tru
     (list: SkillInfo[]) => {
       if (!search_query.trim()) return list;
       const lowerQuery = search_query.toLowerCase();
-      return list.filter(
-        (s) =>
+      return list.filter((s) => {
+        const display = getBuiltinSkillDisplay(s, t);
+        return (
           s.name.toLowerCase().includes(lowerQuery) ||
-          (s.description && s.description.toLowerCase().includes(lowerQuery))
-      );
+          s.description?.toLowerCase().includes(lowerQuery) ||
+          display.name.toLowerCase().includes(lowerQuery) ||
+          display.description.toLowerCase().includes(lowerQuery)
+        );
+      });
     },
-    [search_query]
+    [search_query, t]
   );
 
   const filteredSkills = useMemo(() => matchesQuery(mySkills), [matchesQuery, mySkills]);
@@ -644,6 +649,7 @@ const SkillsHubSettings: React.FC<SkillsHubSettingsProps> = ({ withWrapper = tru
 
   // Read-only skill card used by the Official / Extension / Auto-injected sections.
   const renderReadonlySkillCard = (skill: SkillInfo, variant: 'official' | 'extension' | 'auto', testId?: string) => {
+    const display = getBuiltinSkillDisplay(skill, t);
     const isAuto = variant === 'auto';
     const isExtension = variant === 'extension';
     const accent = isAuto ? 'success' : 'primary';
@@ -677,10 +683,10 @@ const SkillsHubSettings: React.FC<SkillsHubSettingsProps> = ({ withWrapper = tru
           )}
         </div>
         <div className='flex-1 min-w-0 flex flex-col justify-center gap-4px'>
-          <h3 className='text-14px font-semibold text-t-primary/90 truncate m-0'>{skill.name}</h3>
-          {skill.description && (
-            <p className='text-13px text-t-secondary leading-relaxed line-clamp-2 m-0' title={skill.description}>
-              {skill.description}
+          <h3 className='text-14px font-semibold text-t-primary/90 truncate m-0'>{display.name}</h3>
+          {display.description && (
+            <p className='text-13px text-t-secondary leading-relaxed line-clamp-2 m-0' title={display.description}>
+              {display.description}
             </p>
           )}
         </div>

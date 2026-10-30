@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Assistant } from '@/common/types/agent/assistantTypes';
 import type { ICronJob } from '@/common/adapter/ipcBridge';
 import type { TChatConversation } from '@/common/config/storage';
+import { AION_CLI_DISPLAY_NAME } from '@/common/config/branding';
 
 const getJobInvokeMock = vi.fn();
 const runNowInvokeMock = vi.fn();
@@ -168,6 +169,28 @@ describe('TaskDetailPage', () => {
     const assistantAvatar = screen.getByAltText('问好助手');
     expect(assistantAvatar).toHaveAttribute('src', 'data:image/svg+xml;base64,assistant-avatar');
     expect(screen.queryByText('Codex CLI')).not.toBeInTheDocument();
+  });
+
+  it('shows the configured Agent name for a task saved with the old Aion CLI label', async () => {
+    getJobInvokeMock.mockResolvedValue(
+      job({
+        metadata: {
+          agent_type: 'aionrs',
+          agent_config: { assistant_id: 'bare-aionrs', name: 'Aion CLI' },
+        },
+      })
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/scheduled/job-1']}>
+        <Routes>
+          <Route path='/scheduled/:job_id' element={<TaskDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(AION_CLI_DISPLAY_NAME)).toBeInTheDocument();
+    expect(screen.queryByText('Aion CLI')).not.toBeInTheDocument();
   });
 
   it('renames run-now conversations with the execution date in new conversation mode', async () => {
@@ -455,6 +478,25 @@ function assistants(): Assistant[] {
       enabled: true,
       sort_order: 0,
       preset_agent_type: 'codex',
+      enabled_skills: [],
+      custom_skill_names: [],
+      disabled_builtin_skills: [],
+      context_i18n: {},
+      prompts: [],
+      prompts_i18n: {},
+      models: [],
+    },
+    {
+      id: 'bare-aionrs',
+      source: 'generated',
+      name: 'Aion CLI',
+      name_i18n: {},
+      description_i18n: {},
+      avatar: undefined,
+      enabled: true,
+      sort_order: 1,
+      agent_id: 'agent-aionrs',
+      agent: { type: 'aionrs', source: 'internal' },
       enabled_skills: [],
       custom_skill_names: [],
       disabled_builtin_skills: [],

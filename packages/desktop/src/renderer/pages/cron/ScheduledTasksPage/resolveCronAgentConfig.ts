@@ -6,7 +6,7 @@
 
 import type { ICronAgentConfigWrite } from '@/common/adapter/ipcBridge';
 import { isAionrsAssistant, type Assistant } from '@/common/types/agent/assistantTypes';
-import { resolveAssistantName } from '@renderer/utils/model/assistantDisplay';
+import { resolveAssistantTaskName } from '@renderer/utils/model/assistantDisplay';
 
 type SelectedAionrsProvider = {
   id?: string;
@@ -17,6 +17,7 @@ type ResolveCronAgentConfigInput = {
   agentValue: string;
   presetAssistants: Assistant[];
   selectedAionrsProvider?: SelectedAionrsProvider;
+  preservedAssistantName?: string;
   model_id?: string;
   config_options?: Record<string, string>;
   workspace?: string;
@@ -34,6 +35,7 @@ export function resolveCronAgentConfig(input: ResolveCronAgentConfigInput): Reso
     agentValue,
     presetAssistants,
     selectedAionrsProvider,
+    preservedAssistantName,
     model_id,
     config_options,
     workspace,
@@ -52,7 +54,7 @@ export function resolveCronAgentConfig(input: ResolveCronAgentConfigInput): Reso
   let agent_config: ICronAgentConfigWrite | undefined;
 
   const assistant = assistantSelection;
-  const assistantName = resolveAssistantName(assistant, localeKey, assistant.name);
+  const assistantName = resolveAssistantTaskName(assistant, localeKey, preservedAssistantName);
   const mode = getMode(assistant);
 
   if (isAionrsAssistant(assistant)) {

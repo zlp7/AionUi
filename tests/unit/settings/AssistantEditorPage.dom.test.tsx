@@ -161,4 +161,38 @@ describe('AssistantEditorPage', () => {
     expect(screen.queryByTestId('btn-delete-assistant')).not.toBeInTheDocument();
     expect(screen.getByTestId('btn-save-assistant')).not.toBeDisabled();
   });
+
+  it('shows the configured Agent name in the generated assistant header', () => {
+    const editor = createEditor();
+    editor.isCreating = false;
+    editor.profile.name = 'Aion CLI';
+
+    render(
+      <ConfigProvider>
+        <AssistantEditorPage
+          editor={editor}
+          activeAssistant={{
+            id: 'bare-aionrs',
+            name: 'Aion CLI',
+            source: 'generated',
+            enabled: true,
+            sort_order: 1,
+            name_i18n: {},
+            description_i18n: {},
+            context_i18n: {},
+            prompts_i18n: {},
+            enabled_skills: [],
+            custom_skill_names: [],
+            disabled_builtin_skills: [],
+            agent: { type: 'aionrs', source: 'internal' },
+            models: [],
+          }}
+          onBack={vi.fn()}
+        />
+      </ConfigProvider>
+    );
+
+    expect(screen.getByText('星地网络Agent')).toBeInTheDocument();
+    expect(screen.queryByText('Aion CLI')).not.toBeInTheDocument();
+  });
 });

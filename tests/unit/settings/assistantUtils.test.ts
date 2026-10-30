@@ -11,6 +11,7 @@ import {
   sortAssistants,
   filterAssistants,
   groupAssistantsByEnabled,
+  groupMyAssistants,
   resolveAssistantSourceTag,
   buildAssistantEditorBackends,
   filterAssistantEditorBackends,
@@ -160,6 +161,17 @@ describe('filterAssistants', () => {
     expect(filterAssistants(assistants, '伽马', 'all', 'zh').map((a) => a.id)).toEqual(['a3']);
   });
 
+  it('finds the generated Aion CLI assistant by its configured display name', () => {
+    const generated = mockAssistant({
+      id: 'aion',
+      name: 'Aion CLI',
+      source: 'generated',
+      agent: { type: 'aionrs', source: 'internal' },
+    });
+
+    expect(filterAssistants([generated], '星地网络', 'all', 'zh-CN').map((a) => a.id)).toEqual(['aion']);
+  });
+
   it('filters by enabled status', () => {
     expect(filterAssistants(assistants, '', 'enabled', 'en').map((a) => a.id)).toEqual(['a1', 'a3']);
     expect(filterAssistants(assistants, '', 'disabled', 'en').map((a) => a.id)).toEqual(['a2', 'a4']);
@@ -229,6 +241,36 @@ describe('groupAssistantsByEnabled', () => {
   });
 });
 
+describe('groupMyAssistants', () => {
+  it('keeps Aion CLI and user-created assistants while hiding other generated CLI assistants', () => {
+    const assistants = [
+      mockAssistant({
+        id: 'codex',
+        source: 'generated',
+        agent: { type: 'acp', source: 'builtin', acp_backend: 'codex' },
+      }),
+      mockAssistant({ id: 'aion', source: 'generated', agent: { type: 'aionrs', source: 'internal' } }),
+      mockAssistant({
+        id: 'copilot',
+        source: 'generated',
+        agent: { type: 'acp', source: 'builtin', acp_backend: 'copilot' },
+      }),
+      mockAssistant({ id: 'custom', source: 'user' }),
+    ];
+
+    const groups = groupMyAssistants(assistants);
+
+    expect(groups.cliAssistants.map((assistant) => assistant.id)).toEqual(['aion']);
+    expect(groups.createdAssistants.map((assistant) => assistant.id)).toEqual(['custom']);
+  });
+
+  it('does not show generated assistants without an Aion CLI identity', () => {
+    const groups = groupMyAssistants([mockAssistant({ id: 'unknown', source: 'generated' })]);
+
+    expect(groups.cliAssistants).toEqual([]);
+  });
+});
+
 describe('resolveAssistantSourceTag', () => {
   it('shows the built-in tag for builtin assistants', () => {
     expect(resolveAssistantSourceTag('builtin')).toBe('builtin');
@@ -273,6 +315,7 @@ describe('buildAssistantEditorBackends', () => {
     );
 
     expect(backends.map((b) => b.id)).toEqual(['acp-1', 'a9f3c21e', 'aionrs-1']);
+    expect(backends.find((b) => b.id === 'aionrs-1')?.name).toBe('星地网络Agent');
     const antigravity = backends.find((b) => b.id === 'a9f3c21e');
     expect(antigravity?.name).toBe('Antigravity');
     expect(antigravity?.runtimeKey).toBe('antigravity');

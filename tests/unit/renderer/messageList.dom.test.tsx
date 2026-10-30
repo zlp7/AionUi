@@ -36,6 +36,15 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@arco-design/web-react', () => ({
+  Button: ({
+    children,
+    onClick,
+    ...props
+  }: React.PropsWithChildren<{ onClick?: () => void; 'aria-expanded'?: boolean }>) => (
+    <button onClick={onClick} aria-expanded={props['aria-expanded']}>
+      {children}
+    </button>
+  ),
   Image: {
     PreviewGroup: ({ children }: PropsWithChildren) => <>{children}</>,
   },
@@ -157,7 +166,9 @@ vi.mock('@/renderer/pages/conversation/Messages/components/SelectionReplyButton'
 }));
 
 vi.mock('@icon-park/react', () => ({
+  Brain: () => <span>brain</span>,
   Down: () => <span>down</span>,
+  Right: () => <span>right</span>,
 }));
 
 function createTextMessage(): IMessageText {
@@ -245,6 +256,12 @@ function Wrapper({
   );
 }
 
+function expandProcessSummaries(): void {
+  screen
+    .getAllByRole('button', { name: /conversation\.thinking\.process/ })
+    .forEach((button) => fireEvent.click(button));
+}
+
 function ReplaceMessagesButton({ messages }: { messages: TMessage[] }): JSX.Element {
   const updateMessages = useUpdateMessageList();
   return <button onClick={() => updateMessages(messages)}>replace messages</button>;
@@ -262,6 +279,69 @@ describe('MessageList', () => {
       diff: 'diff',
     });
     useTeamPermissionMock.mockReturnValue(null);
+  });
+
+  it('places consecutive thoughts and tool groups under one collapsed process', () => {
+    const firstThought = {
+      id: 'think-1',
+      msg_id: 'think-1',
+      conversation_id: 'conversation-1',
+      type: 'thinking',
+      position: 'left',
+      content: { content: 'first thought', status: 'done' },
+      created_at: 1,
+    } as TMessage;
+    const firstTool = createToolGroup([], 'tool-1');
+    const secondThought = {
+      id: 'think-2',
+      msg_id: 'think-2',
+      conversation_id: 'conversation-1',
+      type: 'thinking',
+      position: 'left',
+      content: { content: 'second thought', status: 'done' },
+      created_at: 3,
+    } as TMessage;
+    const secondTool = { ...createToolGroup([], 'tool-2'), created_at: 4 };
+    const reply = { ...createTextMessage(), created_at: 5 };
+
+    render(<MessageList />, {
+      wrapper: ({ children }) => (
+        <Wrapper messages={[firstThought, firstTool, secondThought, secondTool, reply]}>{children}</Wrapper>
+      ),
+    });
+
+    expect(screen.getAllByRole('button', { name: /conversation\.thinking\.process/ })).toHaveLength(1);
+    expect(screen.queryByTestId('tool-summary')).not.toBeInTheDocument();
+    expect(screen.queryByText('thinking')).not.toBeInTheDocument();
+    expect(screen.getByText('streaming reply')).toBeInTheDocument();
+
+    expandProcessSummaries();
+    expect(screen.getAllByTestId('tool-summary')).toHaveLength(2);
+    expect(screen.getAllByText('thinking')).toHaveLength(2);
+  });
+
+  it('opens a collapsed process when jumping to one of its tool messages', () => {
+    const message = createToolGroup([], 'tool-to-find');
+    render(<MessageList />, {
+      wrapper: ({ children }) => <Wrapper messages={[message]}>{children}</Wrapper>,
+    });
+
+    expect(screen.getByRole('button', { name: /conversation\.thinking\.process/ })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
+    fireEvent(
+      window,
+      new CustomEvent('aionui-chat-message-jump', {
+        detail: { conversation_id: 'conversation-1', messageId: message.id },
+      })
+    );
+
+    expect(screen.getByRole('button', { name: /conversation\.thinking\.process/ })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    );
+    expect(screen.getByTestId('tool-summary')).toHaveTextContent(message.id);
   });
 
   it('never renders a plan as a stream row (it belongs to ConversationPlanBar)', () => {
@@ -475,6 +555,7 @@ describe('MessageList', () => {
       wrapper: ({ children }) => <Wrapper messages={[message]}>{children}</Wrapper>,
     });
 
+    expandProcessSummaries();
     expect(screen.getByTestId('tool-summary')).toHaveTextContent('acp-read-1');
     expect(screen.queryByTestId('acp-tool-call')).not.toBeInTheDocument();
   });
@@ -492,6 +573,7 @@ describe('MessageList', () => {
       wrapper: ({ children }) => <Wrapper messages={[message]}>{children}</Wrapper>,
     });
 
+    expandProcessSummaries();
     expect(screen.getByTestId('tool-summary')).toHaveTextContent(message.id);
     expect(screen.queryByTestId('acp-tool-call')).not.toBeInTheDocument();
   });
@@ -506,6 +588,7 @@ describe('MessageList', () => {
       wrapper: ({ children }) => <Wrapper messages={[message]}>{children}</Wrapper>,
     });
 
+    expandProcessSummaries();
     expect(screen.getByTestId('tool-summary')).toHaveTextContent(message.id);
     expect(screen.queryByTestId('acp-tool-call')).not.toBeInTheDocument();
   });
@@ -520,6 +603,7 @@ describe('MessageList', () => {
       wrapper: ({ children }) => <Wrapper messages={[message]}>{children}</Wrapper>,
     });
 
+    expandProcessSummaries();
     expect(screen.getByTestId('tool-summary')).toHaveTextContent(message.id);
     expect(screen.queryByTestId('acp-tool-call')).not.toBeInTheDocument();
   });
@@ -536,6 +620,7 @@ describe('MessageList', () => {
       </Wrapper>
     );
 
+    expandProcessSummaries();
     expect(screen.getByTestId('tool-summary')).toHaveTextContent(runningMessage.id);
 
     fireEvent.click(screen.getByText('replace messages'));
@@ -560,6 +645,7 @@ describe('MessageList', () => {
     });
 
     expect(screen.getByTestId('acp-tool-call')).toHaveAttribute('data-diff-count', '2');
+    expandProcessSummaries();
     expect(screen.getAllByTestId('tool-summary')).toHaveLength(2);
     expect(screen.getAllByTestId('tool-summary').map((item) => item.textContent)).toEqual([
       'acp-read-1',
@@ -653,6 +739,7 @@ describe('MessageList', () => {
       wrapper: ({ children }) => <Wrapper messages={[message]}>{children}</Wrapper>,
     });
 
+    expandProcessSummaries();
     expect(screen.getByTestId('tool-summary')).toHaveTextContent(message.id);
     expect(screen.queryByTestId('file-changes')).not.toBeInTheDocument();
     expect(screen.queryByTestId('tool-group')).not.toBeInTheDocument();

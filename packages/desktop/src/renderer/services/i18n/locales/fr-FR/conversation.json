@@ -569,6 +569,7 @@
     "preset_registered": "Préréglage d'agent enregistré avec succès !"
   },
   "thinking": {
+    "process": "Processus de réflexion",
     "complete": "Réflexion terminée",
     "label": "Réflexion..."
   },
@@ -632,6 +633,7 @@
   "notFound": "Conversation introuvable ou supprimée",
   "explorer": {
     "addFolder": "Add folder to project",
+    "uploadFiles": "Upload local files",
     "refreshFiles": "Actualiser les fichiers",
     "refreshChanges": "Actualiser les modifications",
     "collapseAll": "Tout réduire",
